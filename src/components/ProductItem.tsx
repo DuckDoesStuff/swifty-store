@@ -1,5 +1,5 @@
 
-interface ProductPros {
+interface ProductProps {
   imageSource:string;
   productName:string;
   price:string;
@@ -7,7 +7,7 @@ interface ProductPros {
 
 
 
-export default function Product({ imageSource, productName, price }:ProductPros) {
+export default function Product({ imageSource, productName, price }: ProductProps) {
   // className -> className
   return (
     <a href="#" className="block rounded-lg p-4 shadow-sm shadow-indigo-100 hover:border-black transform transition-transform hover:scale-105">

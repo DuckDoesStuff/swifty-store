@@ -9,9 +9,9 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "flowbite": "^2.3.0",
-    "next": "14.2.3",
     "antd": "^5.17.0",
+    "firebase": "^10.11.1",
+    "flowbite": "^2.3.0",
     "next": "14.2.3",
     "react": "^18",
     "react-dom": "^18",

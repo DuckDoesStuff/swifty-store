@@ -1,7 +1,9 @@
 'use client'
-import { EyeInvisibleOutlined, EyeTwoTone } from '@ant-design/icons';
 import React, { useState } from "react";
-import { Alert, Input } from 'antd';
+import { Alert } from 'antd';
+import {auth} from "@/js/firebase.config";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
+import {useRouter} from "next/navigation";
 
 
 const RegisterForm:React.FC = ()=>{
@@ -12,22 +14,73 @@ const RegisterForm:React.FC = ()=>{
     const [email, setEmail] = useState<string>('');
     const [password, setPassword] = useState<string>('');
     const [showAlert, setShowAlert] = useState<boolean>(false); // Để kiểm soát hiển thị của Alert
-     const [alertMessage, setAlertMessage] = useState<string>(''); // Nội dung của Alert
+    const [alertMessage, setAlertMessage] = useState<string>(''); // Nội dung của Alert
 
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    const router = useRouter();
+
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
         if (email === '' || password === ''||firstName === ''||lastName === ''||cfpassword === '') {
-        setAlertMessage('Hãy điền đầy đủ thông tin trước khi submit.');
-        setShowAlert(true);
+            setAlertMessage('Hãy điền đầy đủ thông tin trước khi submit.');
+            setShowAlert(true);
         } else {
-        setShowAlert(false);
-        console.log('Email:', email, 'Password:', password);
+            setShowAlert(false);
+            console.log('Email:', email, 'Password:', password);
         }
+
+        // Kiểm tra trùng email
+        const response = await fetch(process.env.NEXT_PUBLIC_BACKEND_HOST + `/customer/signup`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                email
+            }),
+        });
+
+        console.log(response);
+
+        if (!response.ok) {
+            throw new Error(`Error creating new customer! status: ${response.status}`);
+        }
+
+        // Tạo acc firebase
+        await createUserWithEmailAndPassword(auth, email, password);
+
+        // Login acc firebase
+        const user = await signInWithEmailAndPassword(auth, email, password)
+        // Lấy idtoken tuwf firebase
+        const idToken = await user.user?.getIdToken();
+
+        // Tạo cookie session
+        const responseCookie = await fetch(process.env.NEXT_PUBLIC_BACKEND_HOST + `/session/customer`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                email,
+                idToken,
+                firstName,
+                lastName,
+                password
+            }),
+        });
+
+        if (!responseCookie.ok) {
+            throw new Error(`Error creating cookie session! status: ${responseCookie.status}`);
+        }
+
+        // Set cookie from the response
+        const sessionData = await responseCookie.json();
+        document.cookie = `swifty_customer_session=${sessionData.sessionId}; path=/; Secure; SameSite=Strict`;
+
+        // Redirect to home page
+        router.push("/")
   };
     return (
-       
-        
         <div className="lg:grid lg:min-h-screen lg:grid-cols-12">
             <section className="relative flex h-32 items-end bg-gray-900 lg:col-span-5 lg:h-full xl:col-span-6">
             <img
@@ -108,8 +161,8 @@ const RegisterForm:React.FC = ()=>{
                             name="firstName"
                             className="block w-full h-10 pl-8 pr-3 mt-1 text-sm text-gray-700 border focus:outline-none rounded shadow-sm focus:border-blue-500" />
                             <span className="absolute inset-y-0 left-0 flex items-center justify-center ml-2"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-4 h-4 text-blue-400 pointer-events-none">
-                                <circle cx="12" cy="6" r="4" stroke="#1C274C" stroke-width="1.5"/>
-                                <path d="M19.9975 18C20 17.8358 20 17.669 20 17.5C20 15.0147 16.4183 13 12 13C7.58172 13 4 15.0147 4 17.5C4 19.9853 4 22 12 22C14.231 22 15.8398 21.8433 17 21.5634" stroke="#1C274C" stroke-width="1.5" stroke-linecap="round"/></svg>
+                                <circle cx="12" cy="6" r="4" stroke="#1C274C" strokeWidth="1.5"/>
+                                <path d="M19.9975 18C20 17.8358 20 17.669 20 17.5C20 15.0147 16.4183 13 12 13C7.58172 13 4 15.0147 4 17.5C4 19.9853 4 22 12 22C14.231 22 15.8398 21.8433 17 21.5634" stroke="#1C274C" strokeWidth="1.5" strokeLinecap="round"/></svg>
                             </span>
                         </div>
                 </div>
@@ -125,8 +178,8 @@ const RegisterForm:React.FC = ()=>{
                             name="lastName"
                             className="block w-full h-10 pl-8 pr-3 mt-1 text-sm text-gray-700 border focus:outline-none rounded shadow-sm focus:border-blue-500" />
                             <span className="absolute inset-y-0 left-0 flex items-center justify-center ml-2"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-4 h-4 text-blue-400 pointer-events-none">
-                                <circle cx="12" cy="6" r="4" stroke="#1C274C" stroke-width="1.5"/>
-                                <path d="M19.9975 18C20 17.8358 20 17.669 20 17.5C20 15.0147 16.4183 13 12 13C7.58172 13 4 15.0147 4 17.5C4 19.9853 4 22 12 22C14.231 22 15.8398 21.8433 17 21.5634" stroke="#1C274C" stroke-width="1.5" stroke-linecap="round"/></svg>
+                                <circle cx="12" cy="6" r="4" stroke="#1C274C" strokeWidth="1.5"/>
+                                <path d="M19.9975 18C20 17.8358 20 17.669 20 17.5C20 15.0147 16.4183 13 12 13C7.58172 13 4 15.0147 4 17.5C4 19.9853 4 22 12 22C14.231 22 15.8398 21.8433 17 21.5634" stroke="#1C274C" strokeWidth="1.5" strokeLinecap="round"/></svg>
                             </span>
                         </div>
                 </div>
@@ -143,7 +196,7 @@ const RegisterForm:React.FC = ()=>{
                             placeholder="xyz@gmail.com"
                             className="block w-full h-10 pl-8 pr-3 mt-1 text-sm text-gray-700 border focus:outline-none rounded shadow-sm focus:border-blue-500" />
                             <span className="absolute inset-y-0 left-0 flex items-center justify-center ml-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-4 h-4 text-black-400 pointer-events-none"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-4 h-4 text-black-400 pointer-events-none"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                             </span>
                         </div>
                 </div>
@@ -163,8 +216,8 @@ const RegisterForm:React.FC = ()=>{
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-4 h-4 text-blue-400 pointer-events-none">
                                     <path d="M9 12C9 12.5523 8.55228 13 8 13C7.44772 13 7 12.5523 7 12C7 11.4477 7.44772 11 8 11C8.55228 11 9 11.4477 9 12Z" fill="#1C274C"/>
                                     <path d="M13 12C13 12.5523 12.5523 13 12 13C11.4477 13 11 12.5523 11 12C11 11.4477 11.4477 11 12 11C12.5523 11 13 11.4477 13 12Z" fill="#1C274C"/>
-                                    <path d="M15 2V22" stroke="#1C274C" stroke-width="1.5" stroke-linecap="round"/>
-                                    <path d="M22 12C22 15.7712 22 17.6569 20.8284 18.8284C19.7653 19.8915 18.1143 19.99 15 19.9991M12 4H10C6.22876 4 4.34315 4 3.17157 5.17157C2 6.34315 2 8.22876 2 12C2 15.7712 2 17.6569 3.17157 18.8284C4.34315 20 6.22876 20 10 20H12M15 4.00093C18.1143 4.01004 19.7653 4.10848 20.8284 5.17157C21.4816 5.82475 21.7706 6.69989 21.8985 8" stroke="#1C274C" stroke-width="1.5" stroke-linecap="round"/></svg>
+                                    <path d="M15 2V22" stroke="#1C274C" strokeWidth="1.5" strokeLinecap="round"/>
+                                    <path d="M22 12C22 15.7712 22 17.6569 20.8284 18.8284C19.7653 19.8915 18.1143 19.99 15 19.9991M12 4H10C6.22876 4 4.34315 4 3.17157 5.17157C2 6.34315 2 8.22876 2 12C2 15.7712 2 17.6569 3.17157 18.8284C4.34315 20 6.22876 20 10 20H12M15 4.00093C18.1143 4.01004 19.7653 4.10848 20.8284 5.17157C21.4816 5.82475 21.7706 6.69989 21.8985 8" stroke="#1C274C" strokeWidth="1.5" strokeLinecap="round"/></svg>
                             </span>
                         </div>
                 </div>
@@ -183,8 +236,8 @@ const RegisterForm:React.FC = ()=>{
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-4 h-4 text-blue-400 pointer-events-none">
                                     <path d="M9 12C9 12.5523 8.55228 13 8 13C7.44772 13 7 12.5523 7 12C7 11.4477 7.44772 11 8 11C8.55228 11 9 11.4477 9 12Z" fill="#1C274C"/>
                                     <path d="M13 12C13 12.5523 12.5523 13 12 13C11.4477 13 11 12.5523 11 12C11 11.4477 11.4477 11 12 11C12.5523 11 13 11.4477 13 12Z" fill="#1C274C"/>
-                                    <path d="M15 2V22" stroke="#1C274C" stroke-width="1.5" stroke-linecap="round"/>
-                                    <path d="M22 12C22 15.7712 22 17.6569 20.8284 18.8284C19.7653 19.8915 18.1143 19.99 15 19.9991M12 4H10C6.22876 4 4.34315 4 3.17157 5.17157C2 6.34315 2 8.22876 2 12C2 15.7712 2 17.6569 3.17157 18.8284C4.34315 20 6.22876 20 10 20H12M15 4.00093C18.1143 4.01004 19.7653 4.10848 20.8284 5.17157C21.4816 5.82475 21.7706 6.69989 21.8985 8" stroke="#1C274C" stroke-width="1.5" stroke-linecap="round"/></svg>
+                                    <path d="M15 2V22" stroke="#1C274C" strokeWidth="1.5" strokeLinecap="round"/>
+                                    <path d="M22 12C22 15.7712 22 17.6569 20.8284 18.8284C19.7653 19.8915 18.1143 19.99 15 19.9991M12 4H10C6.22876 4 4.34315 4 3.17157 5.17157C2 6.34315 2 8.22876 2 12C2 15.7712 2 17.6569 3.17157 18.8284C4.34315 20 6.22876 20 10 20H12M15 4.00093C18.1143 4.01004 19.7653 4.10848 20.8284 5.17157C21.4816 5.82475 21.7706 6.69989 21.8985 8" stroke="#1C274C" strokeWidth="1.5" strokeLinecap="round"/></svg>
                             </span>
                         </div>
                 </div>
