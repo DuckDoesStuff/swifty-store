@@ -1,70 +1,44 @@
-import { Fragment, useState } from 'react'
-import { Dialog, Transition } from '@headlessui/react'
-import { XMarkIcon } from '@heroicons/react/24/outline'
-import { faker } from "@faker-js/faker"
+import {Fragment, useState} from 'react'
+import {Dialog, Transition} from '@headlessui/react'
+import {XMarkIcon} from '@heroicons/react/24/outline'
+import {faker} from "@faker-js/faker"
 import Product from './ProductItem';
 
 interface CartProps {
     isOpen: boolean;
     onClose: () => void;
   }
-  interface Product {
-    name:string;
-    price:string;
-    stock:number;
-    color:string;
-    image: string; 
-  }
-  const generateProduct = ():Product => ({
-        name: faker.commerce.productName(),
-        price: faker.commerce.price(),
-        stock:faker.datatype.number({min:0, max:5}),
-        
-        color:faker.color.human(),
-        image: faker.image.urlLoremFlickr(),
-  });
-  function  calTotal (products: Product[]) {
-    let totalCost:number = 0;
-    products.forEach((product) => {
-        totalCost += parseFloat(product.price)* product.stock;
-      });
-    
-    return totalCost;
-  }
-  
-const products = [
-  {
-    id: 1,
-    name: 'Throwback Hip Bag',
-    href: '#',
-    color: 'Salmon',
-    price: '$90.00',
-    quantity: 1,
-    imageSrc: 'https://tailwindui.com/img/ecommerce-images/shopping-cart-page-04-product-01.jpg',
-    imageAlt: 'Salmon orange fabric pouch with match zipper, gray zipper pull, and adjustable hip belt.',
-  },
-  {
-    id: 2,
-    name: 'Medium Stuff Satchel',
-    href: '#',
-    color: 'Blue',
-    price: '$32.00',
-    quantity: 1,
-    imageSrc: 'https://tailwindui.com/img/ecommerce-images/shopping-cart-page-04-product-02.jpg',
-    imageAlt:
-      'Front of satchel with blue canvas body, black straps and handle, drawstring top, and front zipper pouch.',
-  },
-  // More products...
-]
+interface Product {
+  name:string;
+  price:string;
+  stock:number;
+  color:string;
+  image: string;
+}
+const generateProduct = ():Product => ({
+      name: faker.commerce.productName(),
+      price: faker.commerce.price(),
+      stock:faker.datatype.number({min:0, max:5}),
+      color:faker.color.human(),
+      image: faker.image.urlLoremFlickr(),
+});
+function  calTotal (products: Product[]) {
+  let totalCost:number = 0;
+  products.forEach((product) => {
+      totalCost += parseFloat(product.price)* product.stock;
+    });
+
+  return totalCost;
+}
 const generateProducts = (count: number) => {
-    return Array.from({ length: count }, generateProduct);
-  };
+  return Array.from({ length: count }, generateProduct);
+};
 export default function Cart() {
   const [open, setOpen] = useState(true)
   
 
   
-  const [productList, setProducts] = useState(generateProducts(3)); // Initialize state with 3 products
+  const [productList, setProducts] = useState(generateProducts(6)); // Initialize state with 3 products
   const totalCost = calTotal(productList);
   const handleRemove = (productName: string) => {
     setProducts(productList.filter((product) => product.name !== productName)); // Remove the product by filtering
@@ -87,6 +61,7 @@ export default function Cart() {
         <div className="fixed inset-0 overflow-hidden">
           <div className="absolute inset-0 overflow-hidden">
             <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
+
               <Transition.Child
                 as={Fragment}
                 enter="transform transition ease-in-out duration-500 sm:duration-700"
@@ -94,8 +69,8 @@ export default function Cart() {
                 enterTo="translate-x-0"
                 leave="transform transition ease-in-out duration-500 sm:duration-700"
                 leaveFrom="translate-x-0"
-                leaveTo="translate-x-full"
-              >
+                leaveTo="translate-x-full">
+
                 <Dialog.Panel className="pointer-events-auto w-screen max-w-md">
                   <div className="flex h-full flex-col overflow-y-scroll bg-white shadow-xl">
                     <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
@@ -188,6 +163,8 @@ export default function Cart() {
                     </div>
                   </div>
                 </Dialog.Panel>
+
+
               </Transition.Child>
             </div>
           </div>

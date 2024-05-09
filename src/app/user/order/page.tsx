@@ -1,7 +1,6 @@
 "use client"
-import { useState } from 'react';
+import {useState} from 'react';
 import OrderBill from "@/components/order/orderBill";
-import Header from "@/components/Header";
 
 export default function temp() {
     const [activeTab, setActiveTab] = useState<string>('ordered');
@@ -30,11 +29,11 @@ export default function temp() {
     ];
     return(
         <div className="flex flex-col gap-10 px-10">
-            <Header />
             <div className="flex gap-2">
                 <div className="w-4/10">
                     <p>Chỗ để cái người tab hay gì đó</p>
                 </div>
+
                 <div className="w-full">
                     <div className="mb-4 border-b border-gray-200 dark:border-gray-700">
                         <ul className="flex flex-wrap -mb-px text-sm font-medium text-center" role="tablist">
@@ -50,7 +49,7 @@ export default function temp() {
                         </ul>
                     </div>
                     <div>
-                        <div className="p-4 rounded-lg bg-gray-50 dark:bg-gray-800">
+                        <div className="p-4 rounded-lg bg-gray-50">
                             {activeTab === 'ordered' && <OrderBill products={products} shopName="Tên shop" totalPrice="200"/>}
                             {activeTab === 'on shipping' && <OrderBill products={products} shopName="Tên shop" totalPrice="200"/>}
                             {activeTab === 'completed' && <OrderBill products={products} shopName="Tên shop" totalPrice="200"/>}

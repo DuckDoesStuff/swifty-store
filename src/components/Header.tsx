@@ -1,14 +1,16 @@
 'use client'
 import Link from "next/link";
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import Cart from "./Cart";
-
+import {useAuthContext} from "@/contexts/AuthContext";
 
 
 export default function Header() {
   const [isCartVisible, setIsCartVisible] = useState(false);
+  const user = useAuthContext();
+
   const toggleCartVisibility = () => {
-    setIsCartVisible(!isCartVisible);
+    setIsCartVisible(prev => !prev);
     
   };
   return (
@@ -57,23 +59,25 @@ export default function Header() {
             </nav>
 
             <div className="flex items-center gap-4">
-              <div className="sm:flex sm:gap-4">
-                <Link
-                  className="rounded-md bg-teal-600 px-5 py-2.5 text-sm font-medium text-white shadow"
-                  href="/auth/signin"
-                >
-                  Login
-                </Link>
+              {!user ?
+                <div className="sm:flex sm:gap-4">
+                  <Link
+                    className="rounded-md bg-teal-600 px-5 py-2.5 text-sm font-medium text-white shadow"
+                    href="/auth/signin">
+                    Login
+                  </Link>
 
-                <div className="hidden sm:flex">
-                  <a
-                    className="rounded-md bg-gray-100 px-5 py-2.5 text-sm font-medium text-teal-600"
-                    href="#"
-                  >
-                    Register
-                  </a>
+                  <div className="hidden sm:flex">
+                    <Link
+                      className="rounded-md bg-gray-100 px-5 py-2.5 text-sm font-medium text-teal-600"
+                      href="/auth/register">
+                      Register
+                    </Link>
+                  </div>
                 </div>
-              </div>
+              :<div>
+                  go to user
+                </div>}
 
               <div className="block md:hidden">
                 <button className="rounded bg-gray-100 p-2 text-gray-600 transition hover:text-gray-600/75">

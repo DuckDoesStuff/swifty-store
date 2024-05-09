@@ -1,4 +1,3 @@
-import Header from "@/components/Header";
 import Product from "@/components/ProductItem";
 import Banner from "@/components/Banner";
 import Link from 'next/link';
@@ -24,7 +23,6 @@ export default function Home() {
   ];
   return (
     <div className={"flex flex-col gap-10 px-10"}>
-      <Header />
       <Banner />
       <div className="flex justify-between items-center">
         <p className="text-2xl font-bold">Daily Discover</p>

@@ -1,3 +1,4 @@
+import Image from "next/image";
 
 interface ProductProps {
   imageSource:string;
@@ -10,9 +11,12 @@ interface ProductProps {
 export default function Product({ imageSource, productName, price }: ProductProps) {
   // className -> className
   return (
-    <a href="#" className="block rounded-lg p-4 shadow-sm shadow-indigo-100 hover:border-black transform transition-transform hover:scale-105">
-    <img
+    <a href="#"
+       className="block rounded-lg p-4 shadow-md shadow-neutral-300 hover:border-black transform transition-transform hover:scale-105">
+    <Image
       alt=""
+      width={300}
+      height={400}
       src={imageSource}
       className="h-56 w-full rounded-md object-cover"
     />
