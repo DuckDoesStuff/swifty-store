@@ -2,7 +2,7 @@
 import {useState} from 'react';
 import OrderBill from "@/components/order/orderBill";
 
-export default function temp() {
+export default function order() {
     const [activeTab, setActiveTab] = useState<string>('ordered');
 
     const handleTabChange = (tabId: string) => {
