@@ -76,7 +76,7 @@ export default function Header() {
                   </div>
                 </div>
               :<div>
-                  go to user
+                  {user.email}
                 </div>}
 
               <div className="block md:hidden">

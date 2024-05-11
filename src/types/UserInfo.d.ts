@@ -2,9 +2,13 @@
 
 
 interface UserInfo {
-  id:string;
+  firstName: string;
+  lastName: string;
+  phone: string;
   email: string;
-  username: string;
+  address: string;
+  dateOfBirth: string;
+  photo: string
 }
 
 export default UserInfo

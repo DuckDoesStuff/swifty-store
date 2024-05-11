@@ -32,4 +32,7 @@ export function AuthContextProvider({children} : Readonly<{children : ReactNode}
   )
 }
 
-export const useAuthContext = () => useContext(AuthContext);
+export const useAuthContext = () => {
+  // Rest of the hook
+  return useContext(AuthContext);
+}
