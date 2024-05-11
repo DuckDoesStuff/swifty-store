@@ -1,114 +1,126 @@
+'use client'
+
+import {faker} from "@faker-js/faker"
+import { CiShop } from "react-icons/ci";
+import {useAuthContext} from "@/contexts/AuthContext";
 
 
+interface Product {
+    name:string;
+    price:string;
+    stock:string;
+    color:string;
+    image: string;
+}
+interface Order {
+    store:string;
+    quantity:string;
+    total:string;
+    image: string;
+    product: Product;
+}
 
+const generateProductData = (): Product => ({
+    name: faker.commerce.productName(),
+    price: faker.commerce.price(),
+    stock: faker.datatype.number({min:0, max:5}).toString(),
+    color:faker.color.human(),
+    image: faker.image.urlLoremFlickr()
+});
+
+// Hàm tạo dữ liệu ảo cho Order
+const generateOrderData = (): Order => {
+    const product = generateProductData();
+    const quantity = faker.datatype.number({min:0, max:5}); // Số lượng sản phẩm đặt hàng
+    const total = parseFloat(product.price) * quantity;
+    return {
+        store: faker.company.name(),
+        quantity: quantity.toString(),
+        total: total.toString(),
+        image: faker.image.imageUrl(),
+        product: product}// Sử dụng hàm tạo dữ liệu ảo cho Product
+};
 const CheckoutPage = ()=>{
+    const user = useAuthContext();
+
+    const orders: Order[] = Array.from({ length: 5 }, () => generateOrderData());
+    const totalCost = orders.reduce((acc, order) => {
+        // Chuyển đổi giá và số lượng từ chuỗi sang số và nhân chúng để tính tổng giá của đơn hàng
+        const orderTotal = parseFloat(order.total) * parseInt(order.quantity);
+        
+        return acc + orderTotal;
+    }, 0);
+    const subTotal = totalCost+10;
     return (
-        <div className="bg-gray-100 h-screen py-8">
-            <div className="container mx-auto px-4">
-                <h1 className="text-2xl font-semibold mb-4">Shopping Cart</h1>
-                <div className="flex flex-col md:flex-row gap-4">
-                    <div className="md:w-3/4">
-                        <div className="bg-white rounded-lg shadow-md p-6 mb-4">
-                            <table className="w-full">
-                                <thead>
-                                    <tr>
-                                        <th className="text-left font-semibold">Product</th>
-                                        <th className="text-left font-semibold">Price</th>
-                                        <th className="text-left font-semibold">Quantity</th>
-                                        <th className="text-left font-semibold">Total</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td className="py-4">
-                                            <div className="flex items-center">
-                                                <img className="h-16 w-16 mr-4" src="https://via.placeholder.com/150" alt="Product image"/>
-                                                <span className="font-semibold">Product name</span>
-                                            </div>
-                                        </td>
-                                        <td className="py-4">$19.99</td>
-                                        <td className="py-4">
-                                            <div className="flex items-center">
-                                                <button className="border rounded-md py-2 px-4 mr-2">-</button>
-                                                <span className="text-center w-8">1</span>
-                                                <button className="border rounded-md py-2 px-4 ml-2">+</button>
-                                            </div>
-                                        </td>
-                                        <td className="py-4">$19.99</td>
-                                    </tr>
+        <div className="bg-gray-100 py-8">
+            <div className="flex mx-10 gap-8 justify-center">
+                <div className="max-w-xl w-full gap-10">
+                {orders.map((order=>
+                    <div className="mx-auto bg-white mb-5 p-4   shadow-md rounded-md">
+                            <div className="flex items-center gap-1 mb-3 ">
+                                <CiShop />
+                                <p className="font-semibold"> Shop {order.store} </p>
+                            </div>
+                            <div className="flex items-center ">
+                                <div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-md border border-gray-200">
+                                    <img
+                                        src={order.product.image}
+                                        className="h-full w-full object-cover object-center"
+                                    />
+                                </div>
+                                <div className="ml-4 flex-1 ">
+                                    <h3 className="">
+                                        <a href="#" >{order.product.name}</a>
+                                    </h3>
+                                    <h4  className="">{order.product.price} $</h4>
                                     
-                                </tbody>
-                            </table>
+                                    <p className=" text-sm text-gray-500">{order.product.color}</p>
+                                
+                                    <p className="text-gray-500">Qty {order.quantity}</p>
+                                </div>
+
+                                <h1 className="self-end font-bold">{order.total} $</h1>
+                            </div>
+                            
+
+                        
+                        </div>
+                    ))}
+                </div>
+                <div className=" w-full max-w-xs"> 
+                    <div className="bg-white rounded-md p-4 h-fit ">
+                        <div className="flex justify-between">
+                            <p>Recipient</p>
+                            <p className="font-bold"> {user?.lastName} {user?.firstName} </p>
+                        </div>
+                        <div className="flex ">
+                            <p>Address: {user?.address||"thanh pho hoc chi minh"} </p>
+                            
+                        </div>
+                        <div className="flex justify-between">
+                            <p>Phone</p>
+                            <p className=""> {user?.address} </p>
+                        </div>
+                    <hr className="mt-4 mb-1"></hr>
+                        <div className="flex  justify-between ">
+                            <p className="">Orders</p>
+                            <p>{orders.length} </p>
+                        </div>
+                        <div className="flex  justify-between ">
+                            <p className="">Orders cost</p>
+                            <p>{totalCost} $</p>
+                        </div>
+                        <div className="flex  justify-between ">
+                            <p className="">Shipping fee</p>
+                            <p>10 $</p>
+                        </div>
+                        <hr className="mt-4 mb-1"></hr>
+                        <div className="flex  justify-between ">
+                            <h1 className="font-bold">Subtotal :</h1>
+                            <p>{subTotal} $</p>
                         </div>
                     </div>
-                    <div className="md:w-1/4">
-                        <div className="bg-white rounded-lg shadow-md p-6">
-                            <h2 className="text-lg font-semibold mb-4">Summary</h2>
-                            <div className="flex justify-between mb-2">
-                                <span>Subtotal</span>
-                                <span>$19.99</span>
-                            </div>
-                            <div className="flex justify-between mb-2">
-                                <span>Taxes</span>
-                                <span>$1.99</span>
-                            </div>
-                            <div className="flex justify-between mb-2">
-                                <span>Shipping</span>
-                                <fieldset className="space-y-4">
-  <legend className="sr-only">Delivery</legend>
-
-  <div>
-    <label
-      htmlFor="DeliveryStandard"
-      className="flex cursor-pointer justify-between gap-4 rounded-lg border border-gray-100 bg-white p-4 text-sm font-medium shadow-sm hover:border-gray-200 has-[:checked]:border-blue-500 has-[:checked]:ring-1 has-[:checked]:ring-blue-500"
-    >
-      <div>
-        <p className="text-gray-700">Standard</p>
-
-        <p className="mt-1 text-gray-900">Free</p>
-      </div>
-
-      <input
-        type="radio"
-        name="DeliveryOption"
-        value="DeliveryStandard"
-        id="DeliveryStandard"
-        className="size-5 border-gray-300 text-blue-500"
-        checked
-      />
-    </label>
-  </div>
-
-  <div>
-    <label
-      htmlFor="DeliveryPriority"
-      className="flex cursor-pointer justify-between gap-4 rounded-lg border border-gray-100 bg-white p-4 text-sm font-medium shadow-sm hover:border-gray-200 has-[:checked]:border-blue-500 has-[:checked]:ring-1 has-[:checked]:ring-blue-500"
-    >
-      <div>
-        <p className="text-gray-700">Next Day</p>
-
-        <p className="mt-1 text-gray-900">£9.99</p>
-      </div>
-
-      <input
-        type="radio"
-        name="DeliveryOption"
-        value="DeliveryPriority"
-        id="DeliveryPriority"
-        className="size-5 border-gray-300 text-blue-500"
-      />
-    </label>
-  </div>
-</fieldset>
-                            </div>
-                            <hr className="my-2"/>
-                            <div className="flex justify-between mb-2">
-                                <span className="font-semibold">Total</span>
-                                <span className="font-semibold">$21.98</span>
-                            </div>
-                            <button className="bg-black text-white py-2 px-4 rounded-lg mt-4 w-full">Checkout</button>
-                        </div>
-                    </div>
+                    <button className ="w-full mt-4 inline-block rounded border border-black bg-black px-12 py-3 text-sm font-medium text-white hover:bg-gray-500  focus:outline-none focus:ring active:text-indigo-500" >Procced checkout</button>
                 </div>
             </div>
         </div>

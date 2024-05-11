@@ -40,12 +40,13 @@ export default function Cart() {
 
 
   const [open, setOpen] = useState(true)
+  
   const groupedProducts: { [storeId: string]: { products: Product[]; totalCost: number } } = {};
 
   
   const [productList, setProducts] = useState(generateProducts(6));
   
-  
+
   productList.forEach(product => {
     if (!groupedProducts[product.store]) {
         groupedProducts[product.store] = { products: [], totalCost: 0 };
@@ -113,7 +114,7 @@ export default function Cart() {
                             <div className="flex items-center gap-1 mb-2">
                               <CiShop />
                               <p className="font-semibold"> Shop {storeName} </p>
-                              </div>
+                            </div>
                             <ul role="list" className="-my-6 divide-y divide-gray-200">
                             {groupedProducts[parseInt(storeName)].products.map(product => (
                               <li  className="flex py-6">
