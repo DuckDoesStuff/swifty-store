@@ -15,14 +15,14 @@ interface Product {
   stock:number;
   color:string;
   image: string;
-  store:number;
+  store:string;
 }
 const generateProduct = ():Product => ({
       name: faker.commerce.productName(),
       price: faker.commerce.price(),
       stock:faker.datatype.number({min:0, max:5}),
       color:faker.color.human(),
-      store:faker.datatype.number({min:1, max:3}),
+      store:faker.datatype.number({min:1, max:3}).toString(),
       image: faker.image.urlLoremFlickr(),
 });
 function  calTotal (products: Product[]) {
@@ -37,11 +37,15 @@ const generateProducts = (count: number) => {
   return Array.from({ length: count }, generateProduct);
 };
 export default function Cart() {
+
+
   const [open, setOpen] = useState(true)
-  const groupedProducts: { [storeId: number]: { products: Product[]; totalCost: number } } = {};
+  const groupedProducts: { [storeId: string]: { products: Product[]; totalCost: number } } = {};
 
   
-  const [productList, setProducts] = useState(generateProducts(6)); // Initialize state with 3 products
+  const [productList, setProducts] = useState(generateProducts(6));
+  
+  
   productList.forEach(product => {
     if (!groupedProducts[product.store]) {
         groupedProducts[product.store] = { products: [], totalCost: 0 };
@@ -49,6 +53,8 @@ export default function Cart() {
     groupedProducts[product.store].products.push(product);
     groupedProducts[product.store].totalCost +=( parseInt(product.price)* product.stock);
 });
+
+
   const totalCost = calTotal(productList);
   const handleRemove = (productName: string) => {
     setProducts(productList.filter((product) => product.name !== productName)); // Remove the product by filtering
@@ -102,14 +108,14 @@ export default function Cart() {
 
                       <div className="mt-8">
                         <div className="flow-root">
-                        {Object.keys(groupedProducts).map(storeId =>
-                          <ul className= "bg-gray-100  mb-5 p-4  pb-6 shadow-md rounded-sm" key={storeId} >
+                        {Object.keys(groupedProducts).map(storeName =>
+                          <ul className= "bg-gray-100  mb-5 p-4  pb-6 shadow-md rounded-" key={storeName} >
                             <div className="flex items-center gap-1 mb-2">
                               <CiShop />
-                              <p className="font-semibold"> Shop {storeId} </p>
+                              <p className="font-semibold"> Shop {storeName} </p>
                               </div>
                             <ul role="list" className="-my-6 divide-y divide-gray-200">
-                            {groupedProducts[parseInt(storeId)].products.map(product => (
+                            {groupedProducts[parseInt(storeName)].products.map(product => (
                               <li  className="flex py-6">
                                 <div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-md border border-gray-200">
                                   <img
@@ -148,7 +154,7 @@ export default function Cart() {
                             ))}
                             <div className="flex justify-end items-center gap-3 pt-4 mb-2">
                                     <p className="font-semibold"> Order total: </p>
-                                    <p className="text-lg font-semibold"> ${groupedProducts[parseInt(storeId)].totalCost}</p>
+                                    <p className="text-lg font-semibold"> ${groupedProducts[storeName].totalCost}</p>
                                   </div>
                             </ul>
                           </ul>
