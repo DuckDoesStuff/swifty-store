@@ -1,18 +1,34 @@
 'use client'
 import Link from "next/link";
-import React, {useState} from 'react';
+import React, {useState,useRef,useEffect} from 'react';
 import Cart from "./Cart";
 import {useAuthContext} from "@/contexts/AuthContext";
-
+import userIcon from "../../public/profile-user.png"
 
 export default function Header() {
   const [isCartVisible, setIsCartVisible] = useState(false);
   const user = useAuthContext();
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
+  const toggleDropdown = () => {
+      setIsOpen(!isOpen);
+  };
+  const closeDropdown = (event: MouseEvent) => {
+    if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+    }
+}
   const toggleCartVisibility = () => {
     setIsCartVisible(prev => !prev);
     
   };
+  useEffect(() => {
+    document.addEventListener("mousedown", closeDropdown);
+    return () => {
+        document.removeEventListener("mousedown", closeDropdown);
+    };
+}, []);
   return (
     <header className="bg-white">
       <div className="mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-8">
@@ -48,17 +64,11 @@ export default function Header() {
                   <a className="text-gray-500 transition hover:text-gray-500/75" href="#"> Services </a>
                 </li>
 
-                <li>
-                  <a className="text-gray-500 transition hover:text-gray-500/75" href="#"> Projects </a>
-                </li>
-
-                <li>
-                  <a className="text-gray-500 transition hover:text-gray-500/75" href="#"> Blog </a>
-                </li>
+                
               </ul>
             </nav>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 mr-20">
               {!user ?
                 <div className="sm:flex sm:gap-4">
                   <Link
@@ -75,27 +85,37 @@ export default function Header() {
                     </Link>
                   </div>
                 </div>
-              :<div>
-                  {user.email}
-                </div>}
-
-              <div className="block md:hidden">
-                <button className="rounded bg-gray-100 p-2 text-gray-600 transition hover:text-gray-600/75">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
-                  </svg>
-                </button>
-              </div>
-                <button 
+              :<div className="flex items-center gap-2 relative">
+                <div className="relative">
+              <button onClick={toggleDropdown}
+                id="dropdownDelayButton" data-dropdown-toggle="dropdownHover" data-dropdown-trigger="hover"
+                className=" w-8 h-8 rounded-full bg-transparent p-2 text-gray-600 transition hover:text-gray-600/75"
+                 
+                 >
+                  <img src={user?.photo || userIcon.src} />
+                 </button>
+                 {isOpen&&
+                 <div ref={dropdownRef} id="dropdownHover" className="absolute z-10 bg-white divide-y divide-gray-100 mt-4 rounded-xs shadow w-40 dark:bg-white">
+                  <div className="px-4 py-3 text-sm text-black">
+                  <div>{user.firstName} {user.lastName}</div>
+                    <div className="font-medium text-xs truncate">{user?.email}</div>
+                    </div>
+                  <ul className="py-2 text-sm text-black " aria-labelledby="dropdownHoverButton">
+                    <li>
+                      <Link href={`/user` } onClick={toggleDropdown} className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-100 ">Profile</Link>
+                    </li>
+                    <li>
+                    <Link href={`/user/order` } onClick={toggleDropdown} className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-100 ">Orders</Link>
+                    </li>
+                    
+                  </ul>
+                  <div className="py-2">
+                   <a href="#" className="block text-sm text-red-600 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-100 ">Sign out</a>
+                  </div>
+              </div>}</div>
+              <button 
                   onClick={toggleCartVisibility}
-                  style={{ padding: '10px', border: 'none', background: 'transparent', cursor: 'pointer' }}>
+                  style={{ padding: '10px', border: 'none', background: 'transparent', cursor: 'pointer'}}>
                   <svg width="24px" height="24px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M2.08416 2.7512C2.22155 2.36044 2.6497 2.15503 3.04047 2.29242L3.34187 2.39838C3.95839 2.61511 4.48203 2.79919 4.89411 3.00139C5.33474 3.21759 5.71259 3.48393 5.99677 3.89979C6.27875 4.31243 6.39517 4.76515 6.4489 5.26153C6.47295 5.48373 6.48564 5.72967 6.49233 6H17.1305C18.8155 6 20.3323 6 20.7762 6.57708C21.2202 7.15417 21.0466 8.02369 20.6995 9.76275L20.1997 12.1875C19.8846 13.7164 19.727 14.4808 19.1753 14.9304C18.6236 15.38 17.8431 15.38 16.2821 15.38H10.9792C8.19028 15.38 6.79583 15.38 5.92943 14.4662C5.06302 13.5523 4.99979 12.5816 4.99979 9.64L4.99979 7.03832C4.99979 6.29837 4.99877 5.80316 4.95761 5.42295C4.91828 5.0596 4.84858 4.87818 4.75832 4.74609C4.67026 4.61723 4.53659 4.4968 4.23336 4.34802C3.91052 4.18961 3.47177 4.03406 2.80416 3.79934L2.54295 3.7075C2.15218 3.57012 1.94678 3.14197 2.08416 2.7512Z" fill="#1C274C"/>
                     <path d="M7.5 18C8.32843 18 9 18.6716 9 19.5C9 20.3284 8.32843 21 7.5 21C6.67157 21 6 20.3284 6 19.5C6 18.6716 6.67157 18 7.5 18Z" fill="#1C274C"/>
@@ -103,6 +123,10 @@ export default function Header() {
                   </svg>
                   
               </button>
+            </div>}
+
+              
+                
               {isCartVisible && <Cart />}
             </div>
           </div>
