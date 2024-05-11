@@ -35,7 +35,7 @@ export default function order() {
                 </div>
 
                 <div className="w-full">
-                    <div className="mb-4 border-b border-gray-200 dark:border-gray-700">
+                    <div className="mb-4 border-b border-gray-200">
                         <ul className="flex flex-wrap -mb-px text-sm font-medium text-center" role="tablist">
                             <li className="me-2" role="presentation">
                                 <button className={`inline-block p-4 border-b-2 rounded-t-lg ${activeTab === 'ordered' ? 'border-black text-black' : 'border-gray-100 text-gray-500'}`} onClick={() => handleTabChange('ordered')} type="button" role="tab" aria-controls="ordered" aria-selected={activeTab === 'ordered'}>Ordered</button>
@@ -49,7 +49,7 @@ export default function order() {
                         </ul>
                     </div>
                     <div>
-                        <div className="p-4 rounded-lg bg-gray-50">
+                        <div className="p-4 rounded-lg">
                             {activeTab === 'ordered' && <OrderBill products={products} shopName="Tên shop" totalPrice="200"/>}
                             {activeTab === 'on shipping' && <OrderBill products={products} shopName="Tên shop" totalPrice="200"/>}
                             {activeTab === 'completed' && <OrderBill products={products} shopName="Tên shop" totalPrice="200"/>}

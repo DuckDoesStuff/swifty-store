@@ -2,6 +2,8 @@ import type {Metadata} from "next";
 import {Inter} from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+
 import {AuthContextProvider} from "@/contexts/AuthContext";
 import React from "react";
 
@@ -23,7 +25,7 @@ export default function RootLayout({
           <AuthContextProvider>
             <Header />
             {children}
-
+            <Footer/>
           </AuthContextProvider>
         </div>
       </body>

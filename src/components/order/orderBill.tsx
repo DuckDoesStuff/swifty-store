@@ -18,7 +18,7 @@ interface OrderBillPros {
 
 export default function OrderBill({ products, shopName, totalPrice}:OrderBillPros) {
     return(
-        <div className="border border-gray-300 p-4 rounded-md">
+        <div className="p-4 rounded-md shadow-md shadow-neutral-300">
             <div className="flex items-center gap-1 p-2 ">
                 <CiShop />
                 <p className="font-semibold"> {shopName} </p>

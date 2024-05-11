@@ -13,7 +13,6 @@ export default function ShopInfo({ displayName, createdAt, products, solds, logo
                     <img
                         alt=""
                         src={logo}
-                        className="h-full w-full object-cover"
                     />
                 </div>
                 <div className="flex items-center">
