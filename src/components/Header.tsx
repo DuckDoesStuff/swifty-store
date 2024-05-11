@@ -3,13 +3,15 @@ import Link from "next/link";
 import React, {useState,useRef,useEffect} from 'react';
 import Cart from "./Cart";
 import {useAuthContext} from "@/contexts/AuthContext";
-import userIcon from "../../public/profile-user.png"
+import userIcon from "../../public/profile-user.png";
+import { FaSearch } from "react-icons/fa";
 
 export default function Header() {
   const [isCartVisible, setIsCartVisible] = useState(false);
   const user = useAuthContext();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const toggleDropdown = () => {
       setIsOpen(!isOpen);
@@ -29,11 +31,22 @@ export default function Header() {
         document.removeEventListener("mousedown", closeDropdown);
     };
 }, []);
+
+  const handleSearch = (e) => {
+    setSearchTerm(e.target.value);
+    // Do something with the search term, such as filtering products
+  };
+
+  const handleSearchButtonClick = () => {
+    // Do something when search button is clicked
+    // You can perform search operations here
+  };
+
   return (
     <header className="bg-white">
       <div className="mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between">
-          <div className="flex-1 md:flex md:items-center md:gap-12">
+        <div className="flex h-16 items-center justify-between gap-8">
+          <div className="md:flex md:items-center md:gap-12">
             <Link className="block text-teal-600" href="/">
               <span className="sr-only">Home</span>
               <svg className="h-8" viewBox="0 0 28 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -44,7 +57,18 @@ export default function Header() {
               </svg>
             </Link>
           </div>
-
+          <div className="flex flex-1 border border-teal-600 p-1 rounded-md">
+            <input
+              type="text"
+              className="w-full"
+              placeholder="Search..."
+              value={searchTerm}
+              onChange={handleSearch}
+            />
+            <button className="text-white bg-teal-600 p-2 rounded-md" onClick={handleSearchButtonClick}>
+              <FaSearch />
+            </button>
+        </div>
           <div className="md:flex md:items-center md:gap-12">
             <nav aria-label="Global" className="hidden md:block">
               <ul className="flex items-center gap-6 text-sm">
