@@ -32,14 +32,18 @@ export default function Header() {
     };
 }, []);
 
-  const handleSearch = (e) => {
-    setSearchTerm(e.target.value);
-    // Do something with the search term, such as filtering products
+  const handleSearch = () => {
+    if (searchTerm.trim() !== '') {
+      const currentPath = window.location.pathname;
+      const newUrl = `${currentPath}search?keyword=${encodeURIComponent(searchTerm)}`;
+      window.location.href = newUrl;
+    }
   };
 
-  const handleSearchButtonClick = () => {
-    // Do something when search button is clicked
-    // You can perform search operations here
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
   };
 
   return (
@@ -63,9 +67,10 @@ export default function Header() {
               className="w-full"
               placeholder="Search..."
               value={searchTerm}
-              onChange={handleSearch}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyPress={handleKeyPress}
             />
-            <button className="text-white bg-teal-600 p-2 rounded-md" onClick={handleSearchButtonClick}>
+            <button className="text-white bg-teal-600 p-2 rounded-md" onClick={handleSearch}>
               <FaSearch />
             </button>
         </div>
