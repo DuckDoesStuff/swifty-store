@@ -1,3 +1,4 @@
+import { webpack } from "next/dist/compiled/webpack/webpack";
 import type { Config } from "tailwindcss";
 
 const config: Config = {
@@ -15,6 +16,8 @@ const config: Config = {
       },
     },
   },
-  plugins: [],
+  plugins: [
+  ],
+  
 };
 export default config;
