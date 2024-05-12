@@ -1,10 +1,11 @@
 'use client'
 import Link from "next/link";
-import React, {useState,useRef,useEffect} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import Cart from "./Cart";
 import {useAuthContext} from "@/contexts/AuthContext";
-import userIcon from "../../public/profile-user.png";
-import { FaSearch } from "react-icons/fa";
+import userIcon from "../../public/profile-user.png"
+import Image from "next/image";
+import {FaSearch} from "react-icons/fa";
 
 export default function Header() {
   const [isCartVisible, setIsCartVisible] = useState(false);
@@ -118,13 +119,15 @@ export default function Header() {
                 <div className="relative">
               <button onClick={toggleDropdown}
                 id="dropdownDelayButton" data-dropdown-toggle="dropdownHover" data-dropdown-trigger="hover"
-                className=" w-8 h-8 rounded-full bg-transparent p-2 text-gray-600 transition hover:text-gray-600/75"
+                      className="w-8 h-8 rounded-full bg-transparent p-2 text-gray-600 transition hover:text-gray-600/75"
                  
                  >
-                  <img src={user?.photo || userIcon.src} />
+                <Image alt={user.username} style={{objectFit: "cover", objectPosition: "center"}} width={600}
+                       height={600} src={user?.photo || userIcon.src}/>
                  </button>
                  {isOpen&&
-                 <div ref={dropdownRef} id="dropdownHover" className="absolute z-10 bg-white divide-y divide-gray-100 mt-4 rounded-xs shadow w-40 dark:bg-white">
+                     <div ref={dropdownRef} id="dropdownHover"
+                          className="absolute z-10 bg-white divide-y divide-gray-100 rounded-xs shadow w-40 dark:bg-white">
                   <div className="px-4 py-3 text-sm text-black">
                   <div>{user.firstName} {user.lastName}</div>
                     <div className="font-medium text-xs truncate">{user?.email}</div>

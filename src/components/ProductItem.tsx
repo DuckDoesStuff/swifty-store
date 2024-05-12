@@ -1,18 +1,20 @@
 import Image from "next/image";
+import Link from "next/link";
 
 interface ProductProps {
+  id: string;
   imageSource:string;
   productName:string;
   price:string;
 }
 
 
-
-export default function Product({ imageSource, productName, price }: ProductProps) {
+export default function Product({id, imageSource, productName, price}: ProductProps) {
   // className -> className
   return (
-    <a href="#"
-       className="block rounded-lg p-4 shadow-md shadow-neutral-300 hover:border-black transform transition-transform hover:scale-105">
+    <Link key={id}
+          href={`/product/${id}`}
+          className="block rounded-lg p-4 shadow-md shadow-neutral-300 hover:border-black transform transition-transform hover:scale-105">
     <Image
       alt=""
       width={300}
@@ -26,7 +28,7 @@ export default function Product({ imageSource, productName, price }: ProductProp
         <div>
           <dt className="sr-only">Price</dt>
 
-          <dd className="text-sm text-gray-500">{price}</dd>
+          <dd className="text-sm text-gray-500">${price}</dd>
         </div>
 
         <div>
@@ -36,6 +38,6 @@ export default function Product({ imageSource, productName, price }: ProductProp
         </div>
       </dl>
     </div>
-  </a>
+    </Link>
   )
 }
