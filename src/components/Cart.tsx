@@ -1,64 +1,71 @@
-import {Fragment, useState} from 'react'
+import {Fragment, useEffect, useState} from 'react'
 import {Dialog, Transition} from '@headlessui/react'
 import {XMarkIcon} from '@heroicons/react/24/outline'
-import {faker} from "@faker-js/faker"
-import Product from './ProductItem';
 import { CiShop } from "react-icons/ci";
+import IOrder from "@/types/OrderInfo";
+import Loader from "@/components/Loader";
+import Image from "next/image";
+import Link from "next/link";
+import {message} from "antd";
 
-interface CartProps {
-    isOpen: boolean;
-    onClose: () => void;
-  }
-interface Product {
-  name:string;
-  price:string;
-  stock:number;
-  color:string;
-  image: string;
-  store:string;
+interface CartItems {
+  id:string;
+  productCount:number;
+  orders: IOrder[];
 }
-const generateProduct = ():Product => ({
-      name: faker.commerce.productName(),
-      price: faker.commerce.price(),
-      stock:faker.datatype.number({min:0, max:5}),
-      color:faker.color.human(),
-      store:faker.datatype.number({min:1, max:3}).toString(),
-      image: faker.image.urlLoremFlickr(),
-});
-function  calTotal (products: Product[]) {
-  let totalCost:number = 0;
-  products.forEach((product) => {
-      totalCost += parseFloat(product.price)* product.stock;
-    });
 
-  return totalCost;
-}
-const generateProducts = (count: number) => {
-  return Array.from({ length: count }, generateProduct);
-};
 export default function Cart() {
-
-
   const [open, setOpen] = useState(true)
-  
-  const groupedProducts: { [storeId: string]: { products: Product[]; totalCost: number } } = {};
+  const [cartItems, setCartItems] = useState<CartItems | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  
-  const [productList, setProducts] = useState(generateProducts(6));
-  
+  useEffect(() => {
+    if (!loading && cartItems) return;
+    fetch(process.env.NEXT_PUBLIC_BACKEND_HOST + "/cart", {
+      method: "GET",
+      headers: {"Content-Type": "application/json",},
+      credentials: "include",
+    })
+      .then(async (res) => {
+        const data : CartItems = await res.json();
+        setCartItems(data);
+        setLoading(false);
+    })
+      .catch((error) => {
+        console.error("Error:", error);
+      });
+  }, []);
 
-  productList.forEach(product => {
-    if (!groupedProducts[product.store]) {
-        groupedProducts[product.store] = { products: [], totalCost: 0 };
-    }
-    groupedProducts[product.store].products.push(product);
-    groupedProducts[product.store].totalCost +=( parseInt(product.price)* product.stock);
-});
 
 
-  const totalCost = calTotal(productList);
-  const handleRemove = (productName: string) => {
-    setProducts(productList.filter((product) => product.name !== productName)); // Remove the product by filtering
+  const totalCost = cartItems?.orders.reduce((acc, order) => acc + order.total, 0);
+
+  const handleRemove = (orderId: string) => {
+    fetch(process.env.NEXT_PUBLIC_BACKEND_HOST + `/order/${orderId}`, {
+      method: 'DELETE',
+      headers: {'Content-Type': 'application/json'},
+      credentials: 'include'
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to delete product");
+        }
+        message.open({
+          type:'success',
+          content: 'Product removed from cart',
+          duration: 2
+        });
+        //@ts-ignore
+        setCartItems((prev) => {
+          return {
+            ...prev,
+            orders: prev?.orders.filter(order => order.id !== orderId)
+          }
+        });
+      })
+      .catch((error) => {
+        console.error('Error:', error);
+      });
   };
   
   return (
@@ -71,8 +78,8 @@ export default function Cart() {
           enterTo="opacity-100"
           leave="ease-in-out duration-500"
           leaveFrom="opacity-100"
-          leaveTo="opacity-0"
-        >
+          leaveTo="opacity-0">
+
           <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
         </Transition.Child>
 
@@ -91,9 +98,12 @@ export default function Cart() {
 
                 <Dialog.Panel className="pointer-events-auto w-screen max-w-md">
                   <div className="flex h-full flex-col overflow-y-scroll bg-white shadow-xl">
+                    {/*Cart header and body*/}
                     <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
+                      {/*Title and x button*/}
                       <div className="flex items-start justify-between">
                         <Dialog.Title className="text-lg font-medium text-gray-900">Shopping cart</Dialog.Title>
+
                         <div className="ml-3 flex h-7 items-center">
                           <button
                             type="button"
@@ -105,71 +115,77 @@ export default function Cart() {
                             <XMarkIcon className="h-6 w-6" aria-hidden="true" />
                           </button>
                         </div>
-                      </div>
 
+                      </div>
+                      {/*Cart items*/}
+                      {loading ? <Loader />:
                       <div className="mt-8">
                         <div className="flow-root">
-                        {Object.keys(groupedProducts).map(storeName =>
-                          <ul className= "bg-gray-100  mb-5 p-4  pb-6 shadow-md rounded-" key={storeName} >
+                        {cartItems?.orders.map(order =>
+                          <ul className= "bg-gray-100 mb-5 p-4 pb-6 shadow-md rounded-" key={order.id} >
                             <div className="flex items-center gap-1 mb-2">
                               <CiShop />
-                              <p className="font-semibold"> Shop {storeName} </p>
+                              <p className="font-semibold"> {order.shop.displayName} </p>
                             </div>
                             <ul role="list" className="-my-6 divide-y divide-gray-200">
-                            {groupedProducts[parseInt(storeName)].products.map(product => (
                               <li  className="flex py-6">
                                 <div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-md border border-gray-200">
-                                  <img
-                                    src={product.image}
-                                    
-                                    className="h-full w-full object-cover object-center"
-                                  />
+                                  <Image
+                                    width={200}
+                                    height={200}
+                                    alt={order.product.id}
+                                    src={order.product.productImages[0].url}
+                                    className="h-full w-full object-cover object-center"/>
                                 </div>
 
                                 <div className="ml-4 flex flex-1 flex-col">
                                   <div>
                                     <div className="flex justify-between text-base font-medium text-gray-900">
                                       <h3>
-                                        <a href="#">{product.name}</a>
+                                        <Link href={`/product/${order.product.id}`}>{order.product.displayName}</Link>
                                       </h3>
-                                      <p className="ml-4">{product.price}</p>
+                                      <p className="ml-4">${order.product.price}</p>
                                     </div>
-                                    <p className="mt-1 text-sm text-gray-500">{product.color}</p>
                                   </div>
+
                                   <div className="flex flex-1 items-end justify-between text-sm">
-                                    <p className="text-gray-500">Qty {product.stock}</p>
+                                    <p className="text-gray-500">Qty {order.quantity}</p>
 
                                     <div className="flex">
                                       <button
                                         type="button"
-                                        onClick={() => handleRemove(product.name)}
-                                        className="font-medium text-red-800 hover:text-black"
-                                      >
+                                        onClick={() => handleRemove(order.id)}
+                                        className="font-medium text-red-800 hover:text-black">
                                         Remove
                                       </button>
                                     </div>
                                   </div>
-                                  
                                 </div>
                               </li>
-                            ))}
-                            <div className="flex justify-end items-center gap-3 pt-4 mb-2">
-                                    <p className="font-semibold"> Order total: </p>
-                                    <p className="text-lg font-semibold"> ${groupedProducts[storeName].totalCost}</p>
-                                  </div>
+
+                              {/*Order subtotal*/}
+                              <div className="flex justify-end items-center gap-3 pt-4 mb-2">
+                                <p className="font-semibold"> Order total: </p>
+                                <p className="text-lg font-semibold"> ${order.total}</p>
+                              </div>
                             </ul>
                           </ul>
                         )}
                         </div>
                       </div>
+                      }
                     </div>
 
+                    {/*Cart footer*/}
                     <div className="border-t border-gray-200 px-4 py-6 sm:px-6">
+                      {/*Subtotal*/}
                       <div className="flex justify-between text-base font-medium text-gray-900">
                         <p>Subtotal</p>
                         <p>{totalCost} $</p>
                       </div>
+
                       <p className="mt-0.5 text-sm text-gray-500">Shipping and taxes calculated at checkout.</p>
+                      {/*Checkout page*/}
                       <div className="mt-6">
                         <a
                           href="user/checkout"
@@ -178,6 +194,7 @@ export default function Cart() {
                           Checkout
                         </a>
                       </div>
+                      {/*Continue shopping*/}
                       <div className="mt-6 flex justify-center text-center text-sm text-gray-500">
                         <p>
                           or{' '}

@@ -6,12 +6,17 @@ import {useAuthContext} from "@/contexts/AuthContext";
 import userIcon from "../../public/profile-user.png"
 import Image from "next/image";
 import {FaSearch} from "react-icons/fa";
+import {auth} from "@/js/firebase.config";
+import {useRouter} from "next/navigation";
 
 export default function Header() {
   const [isCartVisible, setIsCartVisible] = useState(false);
-  const user = useAuthContext();
+  const authContext = useAuthContext();
+  const user = authContext?.user;
+  const setLoading = authContext?.setLoading;
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
 
   const toggleDropdown = () => {
@@ -47,6 +52,17 @@ export default function Header() {
     }
   };
 
+  const handleLogout = async () => {
+    console.log("Logging out");
+    await auth.signOut();
+    await fetch(process.env.NEXT_PUBLIC_BACKEND_HOST + "/session/customer", {
+      method: "DELETE",
+      credentials: "include",
+    });
+    setLoading && setLoading(true);
+    router.refresh();
+  }
+
   return (
     <header className="bg-white">
       <div className="mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-8">
@@ -62,6 +78,7 @@ export default function Header() {
               </svg>
             </Link>
           </div>
+
           <div className="flex flex-1 border border-teal-600 p-1 rounded-md">
             <input
               type="text"
@@ -75,6 +92,7 @@ export default function Header() {
               <FaSearch />
             </button>
         </div>
+
           <div className="md:flex md:items-center md:gap-12">
             <nav aria-label="Global" className="hidden md:block">
               <ul className="flex items-center gap-6 text-sm">
@@ -142,7 +160,7 @@ export default function Header() {
                     
                   </ul>
                   <div className="py-2">
-                   <a href="#" className="block text-sm text-red-600 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-100 ">Sign out</a>
+                   <Link href="#" onClick={handleLogout} className="block text-sm text-red-600 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-100 ">Sign out</Link>
                   </div>
               </div>}</div>
               <button 

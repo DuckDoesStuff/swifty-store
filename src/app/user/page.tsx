@@ -93,8 +93,9 @@ const UserProfilePage = () => {
             key: "saving",
             duration: 2,
           });
+          setUser(result.data);
           setEdit(false);
-        } else {
+        } else if (result.statusCode === 401) {
           console.log("Not user");
         }
       })

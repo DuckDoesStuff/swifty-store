@@ -6,6 +6,7 @@ import {createUserWithEmailAndPassword, signInWithEmailAndPassword} from "fireba
 import {useRouter} from "next/navigation";
 import Link from "next/link";
 import * as Yup from 'yup';
+import {useAuthContext} from "@/contexts/AuthContext";
 
 interface RegisterForm {
   firstName: string;
@@ -38,7 +39,8 @@ const RegisterForm:React.FC = ()=>{
 
   const [showAlert, setShowAlert] = useState<boolean>(false); // Để kiểm soát hiển thị của Alert
   const [alertMessage, setAlertMessage] = useState<string>(''); // Nội dung của Alert
-
+  const authContext = useAuthContext();
+  const setLoading = authContext?.setLoading;
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -95,6 +97,9 @@ const RegisterForm:React.FC = ()=>{
         document.cookie = `swifty_customer_session=${sessionData.sessionId}; path=/; Secure; SameSite=Strict`;
 
         // Redirect to home page
+        if (setLoading) {
+          setLoading(true);
+        }
         router.push("/");
       })
       .catch((error) => {

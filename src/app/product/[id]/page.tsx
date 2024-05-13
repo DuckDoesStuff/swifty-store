@@ -1,7 +1,7 @@
 "use client"
 import React, {useEffect, useState} from 'react';
 import {useParams} from 'next/navigation';
-import {Carousel} from 'antd';
+import {Carousel, message as notification} from 'antd';
 import {FiShoppingCart} from "react-icons/fi";
 import ShopInfo from "@/components/shop/ShopInfo";
 import Product from "@/components/ProductItem";
@@ -10,6 +10,7 @@ import Image from "next/image";
 import Loader from "@/components/Loader";
 import IProductInfo from "@/types/ProductInfo";
 import IShopInfo from "@/types/ShopInfo";
+import {useAuthContext} from "@/contexts/AuthContext";
 
 export default function ProductDetail() {
   const params = useParams();
@@ -18,6 +19,8 @@ export default function ProductDetail() {
   const [shop, setShop] = useState<IShopInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState<IProductInfo[] | null>(null);
+  const authContext = useAuthContext();
+  const user = authContext?.user;
 
   useEffect(() => {
     fetch(process.env.NEXT_PUBLIC_BACKEND_HOST + `/product/${params.id}`, {
@@ -62,8 +65,6 @@ export default function ProductDetail() {
     </div>
   )
 
-
-
   const increaseQuantity = () => {
     setQuantity(quantity + 1);
   };
@@ -74,6 +75,48 @@ export default function ProductDetail() {
     }
   };
 
+  const handleAddToCart = () => {
+    notification.open({
+      type: 'loading',
+      content: 'Adding to cart...',
+      duration: 0,
+      key: 'cart'
+    })
+    fetch(process.env.NEXT_PUBLIC_BACKEND_HOST + `/cart`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      credentials: 'include',
+      body: JSON.stringify({
+        productId: product.id,
+        quantity: quantity
+      })
+    }).then(async (response) => {
+      if (response.ok) {
+        const {message} = await response.json();
+        if (message) {
+          notification.open({
+            type: 'success',
+            content: message,
+            key: 'cart',
+            duration: 1
+          })
+        }else {
+          notification.success({
+            type: 'success',
+            content: "Added to cart",
+            key: 'cart',
+            duration: 1
+          })
+        }
+      } else {
+        notification.error({
+          content: 'Failed to add to cart',
+          key: 'cart',
+          duration: 1
+        })
+      }
+    })
+  }
 
   return (
     <div className="flex flex-col justify-center items-center min-h-screen bg-gray-100">
@@ -105,15 +148,18 @@ export default function ProductDetail() {
               <span className="title-font font-medium text-2xl text-gray-900">${product.price}</span>
 
               <div className="flex gap-4">
-                <button
+                {user ?
+                <button onClick={handleAddToCart}
                   className="flex items-center gap-2 text-teal-600 bg-white border border-teal-600 py-2 px-6 focus:outline-none hover:bg-teal-100 rounded">
-                  <FiShoppingCart/> Add To Card
-                </button>
-
-                <button
-                  className="flex text-white bg-teal-600 border-0 py-2 px-6 focus:outline-none hover:bg-teal-500 rounded">BUY
-                  NOW
-                </button>
+                  <FiShoppingCart/> Add To Cart
+                </button>:
+                <Link href="/auth/signin">
+                  <button
+                    className="flex items-center gap-2 text-teal-600 bg-white border border-teal-600 py-2 px-6 focus:outline-none hover:bg-teal-100 rounded">
+                    <FiShoppingCart/> Add To Cart
+                  </button>
+                </Link>
+                }
               </div>
             </div>
           </div>
