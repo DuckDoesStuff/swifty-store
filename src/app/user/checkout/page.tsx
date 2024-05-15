@@ -1,130 +1,172 @@
 'use client'
 
-import {faker} from "@faker-js/faker"
-import { CiShop } from "react-icons/ci";
+import {CiShop} from "react-icons/ci";
 import {useAuthContext} from "@/contexts/AuthContext";
+import {useEffect, useState} from "react";
+import Image from "next/image";
+import Loader from "@/components/Loader";
+import Link from "next/link";
+import {message} from "antd";
+import {useRouter} from "next/navigation";
+import ICartItem from "@/types/CartItem";
 
+const CheckoutPage = () => {
+  const authContext = useAuthContext();
+  const user = authContext?.user;
+  const router = useRouter();
 
-interface Product {
-    name:string;
-    price:string;
-    stock:string;
-    color:string;
-    image: string;
-}
-interface Order {
-    store:string;
-    quantity:string;
-    total:string;
-    image: string;
-    product: Product;
-}
+  const [orders, setOrders] = useState<ICartItem[] | []>([]);
+  const [loading, setLoading] = useState(true);
 
-const generateProductData = (): Product => ({
-    name: faker.commerce.productName(),
-    price: faker.commerce.price(),
-    stock: faker.datatype.number({min:0, max:5}).toString(),
-    color:faker.color.human(),
-    image: faker.image.urlLoremFlickr()
-});
+  useEffect(() => {
+    if (!loading && orders) return;
+    const data = fetch(process.env.NEXT_PUBLIC_BACKEND_HOST + '/cart', {
+      method: "GET",
+      headers: {"Content-Type": "application/json",},
+      credentials: "include",
+    })
+      .then(async (res) => {
+        const data = await res.json();
+        setOrders(data.cartItems);
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+      });
+  }, []);
 
-// Hàm tạo dữ liệu ảo cho Order
-const generateOrderData = (): Order => {
-    const product = generateProductData();
-    const quantity = faker.datatype.number({min:0, max:5}); // Số lượng sản phẩm đặt hàng
-    const total = parseFloat(product.price) * quantity;
-    return {
-        store: faker.company.name(),
-        quantity: quantity.toString(),
-        total: total.toString(),
-        image: faker.image.imageUrl(),
-        product: product}// Sử dụng hàm tạo dữ liệu ảo cho Product
-};
-const CheckoutPage = ()=>{
-    const user = useAuthContext();
+  if (loading) {
+    return <Loader/>
+  }
 
-    const orders: Order[] = Array.from({ length: 5 }, () => generateOrderData());
-    const totalCost = orders.reduce((acc, order) => {
-        // Chuyển đổi giá và số lượng từ chuỗi sang số và nhân chúng để tính tổng giá của đơn hàng
-        const orderTotal = parseFloat(order.total) * parseInt(order.quantity);
-        
-        return acc + orderTotal;
-    }, 0);
-    const subTotal = totalCost+10;
-    return (
-        <div className="bg-gray-100 py-8">
-            <div className="flex mx-10 gap-8 justify-center">
-                <div className="max-w-xl w-full gap-10">
-                {orders.map((order=>
-                    <div className="mx-auto bg-white mb-5 p-4   shadow-md rounded-md">
-                            <div className="flex items-center gap-1 mb-3 ">
-                                <CiShop />
-                                <p className="font-semibold"> Shop {order.store} </p>
-                            </div>
-                            <div className="flex items-center ">
-                                <div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-md border border-gray-200">
-                                    <img
-                                        src={order.product.image}
-                                        className="h-full w-full object-cover object-center"
-                                    />
-                                </div>
-                                <div className="ml-4 flex-1 ">
-                                    <h3 className="">
-                                        <a href="#" >{order.product.name}</a>
-                                    </h3>
-                                    <h4  className="">{order.product.price} $</h4>
-                                    
-                                    <p className=" text-sm text-gray-500">{order.product.color}</p>
-                                
-                                    <p className="text-gray-500">Qty {order.quantity}</p>
-                                </div>
+  if (!orders) {
+    return <div className={"font-bold text-xl text-center py-20"}>
+      Oops! did you try to checkout an empty cart?
+    </div>
+  }
 
-                                <h1 className="self-end font-bold">{order.total} $</h1>
-                            </div>
-                            
+  const handlePlaceOrder = () => {
+    message.open({
+      content: "Placing order...",
+      duration: 0,
+      key: "order",
+    })
+    fetch(process.env.NEXT_PUBLIC_BACKEND_HOST + '/cart/checkout', {
+      method: "POST",
+      headers: {"Content-Type": "application/json",},
+      credentials: "include",
+    })
+      .then(async (res) => {
+        const data = await res.json();
+        console.log(data);
+        message.success({
+          content: "Order placed successfully",
+          key: "order",
+        });
+        setTimeout(() => {
+          router.push("/user/order")
+        }, 1000)
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        message.error({
+          content: "Failed to place order",
+          key: "order",
+        })
+      });
+  }
 
-                        
-                        </div>
-                    ))}
+  const canPlaceOrder = !(orders.length === 0 || user?.address == null || user?.phone == null);
+  const totalCost = orders.reduce((acc, order) => {
+    return acc + order.quantity * order.product.price;
+  }, 0);
+  const subTotal = totalCost + 10;
+  return (
+    <div className="bg-gray-100 py-8">
+      <div className="flex mx-10 gap-8 justify-center">
+        <div className="max-w-xl w-full gap-10">
+          {orders.map((order =>
+              <div className="mx-auto bg-white mb-5 p-4 shadow-md rounded-md">
+                <div className="flex items-center gap-1 mb-3 ">
+                  <CiShop/>
+                  <Link href={`/shop/${order.product.shop.nameId}`}
+                        className="font-semibold"> Shop: {order.product.shop.displayName} </Link>
                 </div>
-                <div className=" w-full max-w-xs"> 
-                    <div className="bg-white rounded-md p-4 h-fit ">
-                        <div className="flex justify-between">
-                            <p>Recipient</p>
-                            <p className="font-bold"> {user?.lastName} {user?.firstName} </p>
-                        </div>
-                        <div className="flex ">
-                            <p>Address: {user?.address||"thanh pho hoc chi minh"} </p>
-                            
-                        </div>
-                        <div className="flex justify-between">
-                            <p>Phone</p>
-                            <p className=""> {user?.address} </p>
-                        </div>
-                    <hr className="mt-4 mb-1"></hr>
-                        <div className="flex  justify-between ">
-                            <p className="">Orders</p>
-                            <p>{orders.length} </p>
-                        </div>
-                        <div className="flex  justify-between ">
-                            <p className="">Orders cost</p>
-                            <p>{totalCost} $</p>
-                        </div>
-                        <div className="flex  justify-between ">
-                            <p className="">Shipping fee</p>
-                            <p>10 $</p>
-                        </div>
-                        <hr className="mt-4 mb-1"></hr>
-                        <div className="flex  justify-between ">
-                            <h1 className="font-bold">Subtotal :</h1>
-                            <p>{subTotal} $</p>
-                        </div>
-                    </div>
-                    <button className ="w-full mt-4 inline-block rounded border border-black bg-black px-12 py-3 text-sm font-medium text-white hover:bg-gray-500  focus:outline-none focus:ring active:text-indigo-500" >Procced checkout</button>
+                <div className="flex items-center ">
+                  <div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-md border border-gray-200">
+                    <Image
+                      width={100}
+                      height={100}
+                      alt={order.product.displayName}
+                      src={order.product.productImages[0].url}
+                      className="h-full w-full object-cover object-center"
+                    />
+                  </div>
+                  <div className="ml-4 flex-1">
+                    <Link href={`/product/${order.product.id}`}>{order.product.displayName}</Link>
+                    <h4 className="">{order.product.price} $</h4>
+                    <p className="text-gray-500">Qty {order.quantity}</p>
+                  </div>
+
+                  <h1 className="self-end font-bold">{order.quantity * order.product.price} $</h1>
                 </div>
-            </div>
+              </div>
+          ))}
         </div>
-    )
+
+        <div className="h-fit w-full max-w-xs">
+          <div className="bg-white rounded-md p-4 h-fit shadow-md">
+            <div className="flex justify-between">
+              <p>Recipient: </p>
+              <p className="font-bold"> {user?.lastName} {user?.firstName} </p>
+            </div>
+
+            <div className="flex justify-between gap-2 mt-2">
+              <p>Address: </p>
+              <p>{user?.address || "Unknown"} </p>
+            </div>
+
+            <div className="flex justify-between gap-2 mt-2">
+              <p>Phone: </p>
+              <p>{user?.phone || "Unknown"} </p>
+            </div>
+
+            <hr className="mt-4 mb-1"></hr>
+
+            <div className="flex justify-between ">
+              <p className="">Orders</p>
+              <p>{orders.length} </p>
+            </div>
+
+            <div className="flex justify-between ">
+              <p className="">Orders cost</p>
+              <p>{totalCost} $</p>
+            </div>
+
+            <div className="flex justify-between ">
+              <p className="">Shipping fee</p>
+              <p>10 $</p>
+            </div>
+
+            <hr className="mt-4 mb-1"></hr>
+
+            <div className="flex justify-between ">
+              <h1 className="font-bold">Subtotal :</h1>
+              <p>{subTotal} $</p>
+            </div>
+          </div>
+          {!canPlaceOrder &&
+              <p className={"mt-2 text-red-500"}>You need both a phone number and an address to place an order.</p>}
+          <button
+            onClick={handlePlaceOrder}
+            disabled={!canPlaceOrder}
+            className="disabled:bg-gray-500 disabled:border-gray-500 w-full shadow-lg mt-4 inline-block rounded-md border border-black bg-black px-12 py-3 text-sm font-medium text-white hover:bg-opacity-80 focus:outline-none focus:ring enabled:active:text-indigo-500">
+            Place order
+          </button>
+        </div>
+      </div>
+    </div>
+  )
 
 }
 

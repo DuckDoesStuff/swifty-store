@@ -5,7 +5,7 @@ interface ProductProps {
   id: string;
   imageSource:string;
   productName:string;
-  price:string;
+  price: number;
 }
 
 

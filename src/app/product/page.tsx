@@ -1,11 +1,11 @@
 "use client"
 import React, {useEffect, useState} from 'react';
 import Product from "@/components/ProductItem";
-import ProductCard from "@/types/productCard";
+import IProductInfo from "@/types/ProductInfo";
 
 const AllProducts = () => {
   const [currentPage, setCurrentPage] = useState(1);
-  const [products, setProducts] = useState<ProductCard[] | null>([])
+  const [products, setProducts] = useState<IProductInfo[] | null>([])
   const [totalPages, setTotalPages] = useState(0);
   const [totalProducts, setTotalProducts] = useState(0);
   const productsPerPage = 10;
@@ -20,7 +20,6 @@ const AllProducts = () => {
         setProducts(data.products);
         setTotalProducts(data.total);
         setTotalPages(data.totalPages);
-        console.log(data.products)
       })
       .catch((err) => {
         console.error(err);
@@ -47,12 +46,14 @@ const AllProducts = () => {
       <div className="flex justify-between items-center">
         <p className="text-2xl font-bold">All Products</p>
       </div>
+
       <div className="grid grid-cols-5 gap-10">
         {products.map(product => (
           <Product id={product.id} imageSource={product.productImages[0].url} productName={product.displayName}
                    price={product.price}/>
         ))}
       </div>
+
       <div className="flex justify-center items-center space-x-4">
         <button onClick={prevPage} disabled={currentPage === 1}
                 className="px-3 py-1 bg-gray-200 rounded-md hover:bg-gray-300 disabled:opacity-50 disabled:pointer-events-none">

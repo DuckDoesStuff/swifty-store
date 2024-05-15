@@ -7,6 +7,7 @@ import Loader from "@/components/Loader";
 import {getDownloadURL, getStorage, ref, uploadBytes} from "@firebase/storage";
 import {auth} from "@/js/firebase.config";
 import dayjs from "dayjs";
+import Image from "next/image";
 
 
 const UserProfilePage = () => {
@@ -114,7 +115,9 @@ const UserProfilePage = () => {
     <div className="flex justify-center items-center min-h-screen bg-gray-200">
       <form onSubmit={onFormSubmit}
         className="relative mt-10 mb-10 mx-auto w-full max-w-3xl bg-white px-6 pt-10 pb-8 shadow-xl ring-1 ring-gray-900/5 sm:rounded-xl sm:px-10">
+
         <div className="space-y-12">
+
           <div className="border-b border-gray-900/10 pb-12">
 
             <nav aria-label="Breadcrumb">
@@ -167,7 +170,9 @@ const UserProfilePage = () => {
 
               <div className="col-span-full flex flex-col items-center justify-center ">
                 <div className="mt-2 mb-3 ">
-                  <img alt={"User avatar"} className="h-40 w-40 text-gray-300 rounded-full " src={user.photo} aria-hidden="true"/>
+                  <Image width={200} height={200} alt={"User avatar"}
+                         className="h-40 w-40 text-gray-300 rounded-full border-2 border-s-gray-300 drop-shadow-lg"
+                         src={user.photo} aria-hidden="true"/>
                 </div>
                 {edit ?
                   <>
@@ -183,6 +188,7 @@ const UserProfilePage = () => {
 
 
             </div>
+
           </div>
 
           <div className="border-b border-gray-900/10 pb-12">
@@ -297,7 +303,6 @@ const UserProfilePage = () => {
 
             </div>
           </div>
-
 
         </div>
 

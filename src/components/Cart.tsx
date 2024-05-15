@@ -1,22 +1,17 @@
 import {Fragment, useEffect, useState} from 'react'
 import {Dialog, Transition} from '@headlessui/react'
 import {XMarkIcon} from '@heroicons/react/24/outline'
-import { CiShop } from "react-icons/ci";
-import IOrder from "@/types/OrderInfo";
+import {CiShop} from "react-icons/ci";
 import Loader from "@/components/Loader";
 import Image from "next/image";
 import Link from "next/link";
 import {message} from "antd";
+import ICartItem from "@/types/CartItem";
 
-interface CartItems {
-  id:string;
-  productCount:number;
-  orders: IOrder[];
-}
 
 export default function Cart() {
   const [open, setOpen] = useState(true)
-  const [cartItems, setCartItems] = useState<CartItems | null>(null);
+  const [cartItems, setCartItems] = useState<ICartItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -27,8 +22,8 @@ export default function Cart() {
       credentials: "include",
     })
       .then(async (res) => {
-        const data : CartItems = await res.json();
-        setCartItems(data);
+        const data = await res.json();
+        setCartItems(data.cartItems);
         setLoading(false);
     })
       .catch((error) => {
@@ -36,12 +31,8 @@ export default function Cart() {
       });
   }, []);
 
-
-
-  const totalCost = cartItems?.orders.reduce((acc, order) => acc + order.total, 0);
-
-  const handleRemove = (orderId: string) => {
-    fetch(process.env.NEXT_PUBLIC_BACKEND_HOST + `/order/${orderId}`, {
+  const handleRemove = (cartItemId: string) => {
+    fetch(process.env.NEXT_PUBLIC_BACKEND_HOST + `/cart/${cartItemId}`, {
       method: 'DELETE',
       headers: {'Content-Type': 'application/json'},
       credentials: 'include'
@@ -56,18 +47,22 @@ export default function Cart() {
           duration: 2
         });
         //@ts-ignore
-        setCartItems((prev) => {
-          return {
-            ...prev,
-            orders: prev?.orders.filter(order => order.id !== orderId)
-          }
-        });
+        setCartItems(cartItems.filter((cartItem) => cartItem.id !== cartItemId));
       })
       .catch((error) => {
         console.error('Error:', error);
       });
   };
-  
+
+  let totalCost = 0;
+
+  if (loading) {
+    return <Loader/>
+  }
+  if (cartItems?.length > 0) {
+    totalCost = cartItems?.reduce((acc, cartItem) => acc + cartItem.quantity * cartItem.product.price, 0);
+  }
+
   return (
     <Transition show={open} as={Fragment}>
       <Dialog className="relative z-10" onClose={setOpen}>
@@ -120,21 +115,24 @@ export default function Cart() {
                       {/*Cart items*/}
                       {loading ? <Loader />:
                       <div className="mt-8">
+                        {cartItems?.length === 0 ?
+                          <p className="text-black-2 text-center">It looks like you don't have any items in your
+                            cart</p> :
                         <div className="flow-root">
-                        {cartItems?.orders.map(order =>
-                          <ul className= "bg-gray-100 mb-5 p-4 pb-6 shadow-md rounded-" key={order.id} >
+                          {cartItems?.map(cartItem =>
+                            <ul className="bg-gray-100 mb-5 p-4 pb-6 shadow-md rounded-" key={cartItem.id}>
                             <div className="flex items-center gap-1 mb-2">
                               <CiShop />
-                              <p className="font-semibold"> {order.shop.displayName} </p>
+                              <p className="font-semibold"> Shop: {cartItem.product.displayName} </p>
                             </div>
                             <ul role="list" className="-my-6 divide-y divide-gray-200">
                               <li  className="flex py-6">
                                 <div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-md border border-gray-200">
                                   <Image
-                                    width={200}
-                                    height={200}
-                                    alt={order.product.id}
-                                    src={order.product.productImages[0].url}
+                                    width={50}
+                                    height={50}
+                                    alt={cartItem.product.id}
+                                    src={cartItem.product.productImages[0].url}
                                     className="h-full w-full object-cover object-center"/>
                                 </div>
 
@@ -142,19 +140,20 @@ export default function Cart() {
                                   <div>
                                     <div className="flex justify-between text-base font-medium text-gray-900">
                                       <h3>
-                                        <Link href={`/product/${order.product.id}`}>{order.product.displayName}</Link>
+                                        <Link
+                                          href={`/product/${cartItem.product.id}`}>{cartItem.product.displayName}</Link>
                                       </h3>
-                                      <p className="ml-4">${order.product.price}</p>
+                                      <p className="ml-4">${cartItem.product.price}</p>
                                     </div>
                                   </div>
 
                                   <div className="flex flex-1 items-end justify-between text-sm">
-                                    <p className="text-gray-500">Qty {order.quantity}</p>
+                                    <p className="text-gray-500">Qty {cartItem.quantity}</p>
 
                                     <div className="flex">
                                       <button
                                         type="button"
-                                        onClick={() => handleRemove(order.id)}
+                                        onClick={() => handleRemove(cartItem.id)}
                                         className="font-medium text-red-800 hover:text-black">
                                         Remove
                                       </button>
@@ -166,12 +165,12 @@ export default function Cart() {
                               {/*Order subtotal*/}
                               <div className="flex justify-end items-center gap-3 pt-4 mb-2">
                                 <p className="font-semibold"> Order total: </p>
-                                <p className="text-lg font-semibold"> ${order.total}</p>
+                                <p className="text-lg font-semibold"> ${cartItem.quantity * cartItem.product.price}</p>
                               </div>
                             </ul>
                           </ul>
                         )}
-                        </div>
+                        </div>}
                       </div>
                       }
                     </div>
@@ -187,12 +186,12 @@ export default function Cart() {
                       <p className="mt-0.5 text-sm text-gray-500">Shipping and taxes calculated at checkout.</p>
                       {/*Checkout page*/}
                       <div className="mt-6">
-                        <a
-                          href="user/checkout"
+                        <Link
+                          href="/user/checkout"
                           className="flex items-center justify-center rounded-md border border-transparent bg-black px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-gray-600"
                         >
                           Checkout
-                        </a>
+                        </Link>
                       </div>
                       {/*Continue shopping*/}
                       <div className="mt-6 flex justify-center text-center text-sm text-gray-500">

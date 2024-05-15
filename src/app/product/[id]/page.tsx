@@ -1,7 +1,7 @@
 "use client"
 import React, {useEffect, useState} from 'react';
 import {useParams} from 'next/navigation';
-import {Carousel, message as notification} from 'antd';
+import {message as notification} from 'antd';
 import {FiShoppingCart} from "react-icons/fi";
 import ShopInfo from "@/components/shop/ShopInfo";
 import Product from "@/components/ProductItem";
@@ -11,6 +11,8 @@ import Loader from "@/components/Loader";
 import IProductInfo from "@/types/ProductInfo";
 import IShopInfo from "@/types/ShopInfo";
 import {useAuthContext} from "@/contexts/AuthContext";
+import Carousel from "react-multi-carousel";
+import 'react-multi-carousel/lib/styles.css';
 
 export default function ProductDetail() {
   const params = useParams();
@@ -61,12 +63,13 @@ export default function ProductDetail() {
 
   if (!product || !shop) return (
     <div>
-      <h1 className="text-3xl text-black-2 font-bold mb-5">Product not found</h1>
+      <h1 className="flex justify-center py-52 text-3xl text-black-2 font-bold mb-5">Product not found</h1>
     </div>
   )
 
   const increaseQuantity = () => {
-    setQuantity(quantity + 1);
+    if (quantity < product.stock)
+      setQuantity(quantity + 1);
   };
 
   const decreaseQuantity = () => {
@@ -76,6 +79,16 @@ export default function ProductDetail() {
   };
 
   const handleAddToCart = () => {
+    if (quantity > product.stock) {
+      notification.error({
+        content: "Sorry this product is out of stock",
+        key: 'cart',
+        duration: 2
+      })
+      return;
+    }
+
+
     notification.open({
       type: 'loading',
       content: 'Adding to cart...',
@@ -118,19 +131,52 @@ export default function ProductDetail() {
     })
   }
 
+  const responsive = {
+    superLargeDesktop: {
+      // the naming can be any, depends on you.
+      breakpoint: {max: 4000, min: 3000},
+      items: 1
+    },
+    desktop: {
+      breakpoint: {max: 3000, min: 1024},
+      items: 1
+    },
+    tablet: {
+      breakpoint: {max: 1024, min: 464},
+      items: 1
+    },
+    mobile: {
+      breakpoint: {max: 464, min: 0},
+      items: 1
+    }
+  };
+
   return (
     <div className="flex flex-col justify-center items-center min-h-screen bg-gray-100">
       <section className="text-gray-700 body-font overflow-hidden max-w-6xl bg-white my-5">
-        <div className="flex flex-col container px-5 py-24 mx-auto">
+        <div className="flex flex-col gap-10 container px-5 py-24 mx-auto">
 
           <div className="lg:w-5/6 mx-auto flex flex-wrap">
+
             <div className="lg:w-1/2 w-full">
-              <Carousel arrows infinite={false}>
-                {product.productImages.map((img) => (
-                  <Image width={600} height={600} alt={product.displayName} src={img.url}
-                         className="object-cover object-center rounded border border-gray-200"/>
-                ))}
-              </Carousel></div>
+              <Carousel
+                autoPlay={false}
+                showDots={true}
+                renderButtonGroupOutside={false}
+                ssr={true}
+                responsive={responsive}>
+                {product.productImages.map((image, index) => {
+                  return (
+                    <div key={index} className={"w-full"}>
+                      <Image style={{width: 600, height: 800, objectPosition: "center", objectFit: "contain"}}
+                             alt={product.displayName + `-${index}`} src={image.url} width={600} height={800}/>
+                    </div>
+                  )
+                })}
+
+              </Carousel>
+            </div>
+
             <div className="lg:w-1/2 w-full lg:pl-10 lg:py-6 mt-6 lg:mt-0 flex flex-col gap-3">
               <h1 className="text-gray-900 text-3xl title-font font-medium">{product.displayName}</h1>
               <p className="leading-relaxed">Description: {product.description}</p>
@@ -149,19 +195,20 @@ export default function ProductDetail() {
 
               <div className="flex gap-4">
                 {user ?
-                <button onClick={handleAddToCart}
-                  className="flex items-center gap-2 text-teal-600 bg-white border border-teal-600 py-2 px-6 focus:outline-none hover:bg-teal-100 rounded">
-                  <FiShoppingCart/> Add To Cart
-                </button>:
-                <Link href="/auth/signin">
-                  <button
-                    className="flex items-center gap-2 text-teal-600 bg-white border border-teal-600 py-2 px-6 focus:outline-none hover:bg-teal-100 rounded">
+                  <button onClick={handleAddToCart}
+                          className="flex items-center gap-2 text-teal-600 bg-white border border-teal-600 py-2 px-6 focus:outline-none hover:bg-teal-100 rounded">
                     <FiShoppingCart/> Add To Cart
-                  </button>
-                </Link>
+                  </button> :
+                  <Link href="/auth/signin">
+                    <button
+                      className="flex items-center gap-2 text-teal-600 bg-white border border-teal-600 py-2 px-6 focus:outline-none hover:bg-teal-100 rounded">
+                      <FiShoppingCart/> Add To Cart
+                    </button>
+                  </Link>
                 }
               </div>
             </div>
+
           </div>
 
           <ShopInfo nameId={shop.nameId} displayName={shop.displayName} createdAt={shop.createdAt}
@@ -182,7 +229,6 @@ export default function ProductDetail() {
             <Link href={`/shop/${shop.nameId}`}>
               <p className="text-black-500 hover:underline">See All</p>
             </Link>
-
           </div>
 
         </div>

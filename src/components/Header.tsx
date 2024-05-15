@@ -135,14 +135,12 @@ export default function Header() {
                 </div>
               :<div className="flex items-center gap-2 relative">
                 <div className="relative">
-              <button onClick={toggleDropdown}
-                id="dropdownDelayButton" data-dropdown-toggle="dropdownHover" data-dropdown-trigger="hover"
-                      className="w-8 h-8 rounded-full bg-transparent p-2 text-gray-600 transition hover:text-gray-600/75"
-                 
-                 >
-                <Image alt={user.username} style={{objectFit: "cover", objectPosition: "center"}} width={600}
-                       height={600} src={user?.photo || userIcon.src}/>
-                 </button>
+                  <Image
+                    onClick={toggleDropdown}
+                    alt={user.username} style={{objectFit: "cover", objectPosition: "center"}} width={80}
+                    height={80} src={user?.photo || userIcon.src}
+                    className="cursor-pointer rounded-full w-10 h-10 object-cover object-center shadpw-md border-2 border-gray-200"
+                  />
                  {isOpen&&
                      <div ref={dropdownRef} id="dropdownHover"
                           className="absolute z-10 bg-white divide-y divide-gray-100 rounded-xs shadow w-40 dark:bg-white">

@@ -11,8 +11,6 @@ export default async function Home() {
 
   const products: IProductInfo[] = data.products;
 
-  console.log(products);
-
   return (
     <div className={"flex flex-col gap-10 px-10 pb-32"}>
       <Banner />
