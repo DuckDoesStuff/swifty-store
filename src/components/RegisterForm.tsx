@@ -1,8 +1,13 @@
 'use client'
 import React, {useState} from "react";
-import {Alert} from 'antd';
+import {Alert, message} from 'antd';
 import {auth} from "@/js/firebase.config";
-import {createUserWithEmailAndPassword, signInWithEmailAndPassword} from "firebase/auth";
+import {
+  createUserWithEmailAndPassword,
+  GoogleAuthProvider,
+  signInWithEmailAndPassword,
+  signInWithPopup
+} from "firebase/auth";
 import {useRouter} from "next/navigation";
 import Link from "next/link";
 import * as Yup from 'yup';
@@ -45,7 +50,7 @@ const RegisterForm:React.FC = ()=>{
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
+    message.loading({content: 'Signing up', key: 'loading', duration: 0});
     // Validate form
     registerFormSchema.validate(registerForm)
       .then(async () => {
@@ -65,6 +70,7 @@ const RegisterForm:React.FC = ()=>{
 
 
         if (!response.ok) {
+          message.error({content: 'Customer with this email already exist', key: 'loading', duration: 2});
           throw new Error(`Error creating new customer! status: ${response.status}`);
         }
 
@@ -100,6 +106,8 @@ const RegisterForm:React.FC = ()=>{
         if (setLoading) {
           setLoading(true);
         }
+
+        message.success({content: "Successfully signed up", key: "loading", duration: 2});
         router.push("/");
       })
       .catch((error) => {
@@ -108,6 +116,93 @@ const RegisterForm:React.FC = ()=>{
         return;
       });
   };
+
+  const handleSignUpWithGoogle = async () => {
+    // Sign in with Google
+    const provider = new GoogleAuthProvider();
+    const user = await signInWithPopup(auth, provider)
+      .then((result) => {
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+        return result.user;
+      })
+      .catch((error) => {
+        const credential = GoogleAuthProvider.credentialFromError(error);
+        console.log(error, credential);
+      });
+
+    if (!user) {
+      console.log("Failed to sign in with Google");
+      return;
+    }
+
+    // Call to check if a user exists in the database
+    const response = await fetch(
+      process.env.NEXT_PUBLIC_BACKEND_HOST + "/customer/" + user.email,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      },
+    );
+
+    const data = await response.json();
+
+    const email = user.email;
+    const firstName = user.displayName?.split(" ")[0] || "";
+    const lastName = user.displayName?.split(" ")[1] || "";
+    if (data.statusCode === 404) {
+      // Call API create customer in the database
+      const responseCreate = await fetch(
+        process.env.NEXT_PUBLIC_BACKEND_HOST + "/customer/signup",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email,
+            username: email,
+            firstName,
+            lastName,
+          }),
+        },
+      );
+      if (!responseCreate.ok) {
+        console.log("Failed to create customer");
+        return;
+      }
+    }
+
+    // Send request to create a session
+    const idToken = await user.getIdToken();
+    const sessionResponse = await fetch(
+      process.env.NEXT_PUBLIC_BACKEND_HOST + "/session/customer",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          idToken: idToken,
+          email,
+          nameId: email,
+        }),
+      },
+    );
+
+    if (!sessionResponse.ok) {
+      console.log("Could not create session");
+      return;
+    }
+
+    // Set cookie from the response
+    const sessionData = await sessionResponse.json();
+    document.cookie = `swifty_customer_session=${sessionData.sessionId}; path=/; Secure; SameSite=Strict`;
+
+    // Redirect back to home page
+    router.push("/");
+  }
 
   return (
     <div className="lg:grid lg:min-h-screen lg:grid-cols-12">
@@ -142,8 +237,8 @@ const RegisterForm:React.FC = ()=>{
       </section>
 
       <main className="flex items-center justify-center px-8 py-8 sm:px-12 lg:col-span-7 lg:px-16 lg:py-12 xl:col-span-6">
-        <div className="max-w-xl lg:max-w-3xl">
-          <div className="relative -mt-16 block lg:hidden">
+        <div className="flex flex-col items-center max-w-xl lg:max-w-3xl">
+          <div className="relative-mt-16 block lg:hidden">
             <Link href="/"
                   className="inline-flex size-16 items-center justify-center rounded-full bg-white text-blue-600 sm:size-20"
             >
@@ -174,7 +269,8 @@ const RegisterForm:React.FC = ()=>{
           <form onSubmit={handleSubmit} className="mt-8 grid grid-cols-6 gap-6">
             {/*First name input*/}
             <div className="col-span-6 sm:col-span-3">
-              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 dark:text--100">First name</label>
+              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 dark:text--100">First
+                name</label>
               <div className="relative mt-1">
                 <input
                   type="text"
@@ -182,13 +278,14 @@ const RegisterForm:React.FC = ()=>{
                   onChange={(e) => setRegisterForm({...registerForm, firstName: e.target.value})}
                   id="firstName"
                   name="firstName"
-                  className="block w-full h-10 pl-3 pr-3 mt-1 text-sm text-gray-700 border focus:outline-none rounded shadow-sm focus:border-blue-500" />
+                  className="block w-full h-10 pl-3 pr-3 mt-1 text-sm text-gray-700 border focus:outline-none rounded shadow-sm focus:border-blue-500"/>
               </div>
             </div>
 
             {/*Last name input*/}
             <div className="col-span-6 sm:col-span-3">
-              <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 dark:text--100">Last name</label>
+              <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 dark:text--100">Last
+                name</label>
               <div className="relative mt-1">
                 <input
                   value={registerForm.lastName}
@@ -196,7 +293,7 @@ const RegisterForm:React.FC = ()=>{
                   type="text"
                   id="lastName"
                   name="lastName"
-                  className="block w-full h-10 pl-3 pr-3 mt-1 text-sm text-gray-700 border focus:outline-none rounded shadow-sm focus:border-blue-500" />
+                  className="block w-full h-10 pl-3 pr-3 mt-1 text-sm text-gray-700 border focus:outline-none rounded shadow-sm focus:border-blue-500"/>
               </div>
             </div>
 
@@ -234,16 +331,20 @@ const RegisterForm:React.FC = ()=>{
                   id="email"
                   name="email"
                   placeholder="xyz@gmail.com"
-                  className="block w-full h-10 pl-8 pr-3 mt-1 text-sm text-gray-700 border focus:outline-none rounded shadow-sm focus:border-blue-500" />
+                  className="block w-full h-10 pl-8 pr-3 mt-1 text-sm text-gray-700 border focus:outline-none rounded shadow-sm focus:border-blue-500"/>
                 <span className="absolute inset-y-0 left-0 flex items-center justify-center ml-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-4 h-4 text-black-400 pointer-events-none"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                     stroke="currentColor" className="w-4 h-4 text-black-400 pointer-events-none"><path
+                                  strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                                  d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                             </span>
               </div>
             </div>
 
             {/*Password input*/}
             <div className="col-span-6 sm:col-span-3">
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text--100">Password</label>
+              <label htmlFor="password"
+                     className="block text-sm font-medium text-gray-700 dark:text--100">Password</label>
               <div className="relative mt-1">
 
                 <input
@@ -252,20 +353,28 @@ const RegisterForm:React.FC = ()=>{
                   type="password"
                   id="password"
                   name="password"
-                  className="block w-full h-10 pl-8 pr-3 mt-1 text-sm text-gray-700 border focus:outline-none rounded shadow-sm focus:border-blue-500" />
+                  className="block w-full h-10 pl-8 pr-3 mt-1 text-sm text-gray-700 border focus:outline-none rounded shadow-sm focus:border-blue-500"/>
                 <span className="absolute inset-y-0 left-0 flex items-center justify-center ml-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-4 h-4 text-blue-400 pointer-events-none">
-                                    <path d="M9 12C9 12.5523 8.55228 13 8 13C7.44772 13 7 12.5523 7 12C7 11.4477 7.44772 11 8 11C8.55228 11 9 11.4477 9 12Z" fill="#1C274C"/>
-                                    <path d="M13 12C13 12.5523 12.5523 13 12 13C11.4477 13 11 12.5523 11 12C11 11.4477 11.4477 11 12 11C12.5523 11 13 11.4477 13 12Z" fill="#1C274C"/>
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                     stroke="currentColor" className="w-4 h-4 text-blue-400 pointer-events-none">
+                                    <path
+                                      d="M9 12C9 12.5523 8.55228 13 8 13C7.44772 13 7 12.5523 7 12C7 11.4477 7.44772 11 8 11C8.55228 11 9 11.4477 9 12Z"
+                                      fill="#1C274C"/>
+                                    <path
+                                      d="M13 12C13 12.5523 12.5523 13 12 13C11.4477 13 11 12.5523 11 12C11 11.4477 11.4477 11 12 11C12.5523 11 13 11.4477 13 12Z"
+                                      fill="#1C274C"/>
                                     <path d="M15 2V22" stroke="#1C274C" strokeWidth="1.5" strokeLinecap="round"/>
-                                    <path d="M22 12C22 15.7712 22 17.6569 20.8284 18.8284C19.7653 19.8915 18.1143 19.99 15 19.9991M12 4H10C6.22876 4 4.34315 4 3.17157 5.17157C2 6.34315 2 8.22876 2 12C2 15.7712 2 17.6569 3.17157 18.8284C4.34315 20 6.22876 20 10 20H12M15 4.00093C18.1143 4.01004 19.7653 4.10848 20.8284 5.17157C21.4816 5.82475 21.7706 6.69989 21.8985 8" stroke="#1C274C" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                                    <path
+                                      d="M22 12C22 15.7712 22 17.6569 20.8284 18.8284C19.7653 19.8915 18.1143 19.99 15 19.9991M12 4H10C6.22876 4 4.34315 4 3.17157 5.17157C2 6.34315 2 8.22876 2 12C2 15.7712 2 17.6569 3.17157 18.8284C4.34315 20 6.22876 20 10 20H12M15 4.00093C18.1143 4.01004 19.7653 4.10848 20.8284 5.17157C21.4816 5.82475 21.7706 6.69989 21.8985 8"
+                                      stroke="#1C274C" strokeWidth="1.5" strokeLinecap="round"/></svg>
                             </span>
               </div>
             </div>
 
             {/*Confirm password input*/}
             <div className="col-span-6 sm:col-span-3">
-              <label htmlFor="cfpassword" className="block text-sm font-medium text-gray-700 dark:text--100">ConfirmPassword</label>
+              <label htmlFor="cfpassword"
+                     className="block text-sm font-medium text-gray-700 dark:text--100">ConfirmPassword</label>
               <div className="relative mt-1">
                 <input
                   value={registerForm.cfpassword}
@@ -273,13 +382,20 @@ const RegisterForm:React.FC = ()=>{
                   type="cfpassword"
                   id="cfpassword"
                   name="cfpassword"
-                  className="block w-full h-10 pl-8 pr-3 mt-1 text-sm text-gray-700 border focus:outline-none rounded shadow-sm focus:border-blue-500" />
+                  className="block w-full h-10 pl-8 pr-3 mt-1 text-sm text-gray-700 border focus:outline-none rounded shadow-sm focus:border-blue-500"/>
                 <span className="absolute inset-y-0 left-0 flex items-center justify-center ml-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-4 h-4 text-blue-400 pointer-events-none">
-                                    <path d="M9 12C9 12.5523 8.55228 13 8 13C7.44772 13 7 12.5523 7 12C7 11.4477 7.44772 11 8 11C8.55228 11 9 11.4477 9 12Z" fill="#1C274C"/>
-                                    <path d="M13 12C13 12.5523 12.5523 13 12 13C11.4477 13 11 12.5523 11 12C11 11.4477 11.4477 11 12 11C12.5523 11 13 11.4477 13 12Z" fill="#1C274C"/>
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                     stroke="currentColor" className="w-4 h-4 text-blue-400 pointer-events-none">
+                                    <path
+                                      d="M9 12C9 12.5523 8.55228 13 8 13C7.44772 13 7 12.5523 7 12C7 11.4477 7.44772 11 8 11C8.55228 11 9 11.4477 9 12Z"
+                                      fill="#1C274C"/>
+                                    <path
+                                      d="M13 12C13 12.5523 12.5523 13 12 13C11.4477 13 11 12.5523 11 12C11 11.4477 11.4477 11 12 11C12.5523 11 13 11.4477 13 12Z"
+                                      fill="#1C274C"/>
                                     <path d="M15 2V22" stroke="#1C274C" strokeWidth="1.5" strokeLinecap="round"/>
-                                    <path d="M22 12C22 15.7712 22 17.6569 20.8284 18.8284C19.7653 19.8915 18.1143 19.99 15 19.9991M12 4H10C6.22876 4 4.34315 4 3.17157 5.17157C2 6.34315 2 8.22876 2 12C2 15.7712 2 17.6569 3.17157 18.8284C4.34315 20 6.22876 20 10 20H12M15 4.00093C18.1143 4.01004 19.7653 4.10848 20.8284 5.17157C21.4816 5.82475 21.7706 6.69989 21.8985 8" stroke="#1C274C" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                                    <path
+                                      d="M22 12C22 15.7712 22 17.6569 20.8284 18.8284C19.7653 19.8915 18.1143 19.99 15 19.9991M12 4H10C6.22876 4 4.34315 4 3.17157 5.17157C2 6.34315 2 8.22876 2 12C2 15.7712 2 17.6569 3.17157 18.8284C4.34315 20 6.22876 20 10 20H12M15 4.00093C18.1143 4.01004 19.7653 4.10848 20.8284 5.17157C21.4816 5.82475 21.7706 6.69989 21.8985 8"
+                                      stroke="#1C274C" strokeWidth="1.5" strokeLinecap="round"/></svg>
                             </span>
               </div>
             </div>
@@ -303,7 +419,7 @@ const RegisterForm:React.FC = ()=>{
               <p className="text-sm text-gray-500">
                 By creating an account, you agree to our
                 <a href="#" className="text-gray-700 underline"> terms and conditions </a>
-                 and
+                and
                 <a href="#" className="text-gray-700 underline"> privacy policy</a>.
               </p>
             </div>
@@ -321,6 +437,12 @@ const RegisterForm:React.FC = ()=>{
               </p>
             </div>
           </form>
+
+          <button
+            onClick={handleSignUpWithGoogle}
+            className="w-fit rounded-md px-3 py-2 outline bg-white text-black mt-5">
+            Sign in with google
+          </button>
         </div>
       </main>
     </div>
